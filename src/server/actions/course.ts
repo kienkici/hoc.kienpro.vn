@@ -457,3 +457,36 @@ export async function getCourseByIdOrSlug(idOrSlug: string) {
   const { data: course } = await query.maybeSingle();
   return course;
 }
+
+export async function createOrder(data: {
+  courseId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  amount: number;
+}) {
+  try {
+    const supabase = createClient();
+    const randomCode = "KP" + Math.floor(10000 + Math.random() * 90000);
+
+    const { data: order, error } = await supabase
+      .from("orders")
+      .insert({
+        code: randomCode,
+        course_id: data.courseId,
+        customer_name: data.customerName,
+        customer_email: data.customerEmail,
+        customer_phone: data.customerPhone,
+        amount: data.amount,
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, order };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

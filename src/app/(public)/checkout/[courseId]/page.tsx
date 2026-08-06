@@ -9,13 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { APP_CONFIG, MOCK_NOTICES } from "@/lib/constants";
-import { getCourseByIdOrSlug } from "@/server/actions/course";
+import { getCourseByIdOrSlug, createOrder } from "@/server/actions/course";
 
 export default function CheckoutPage({ params }: { params: { courseId: string } }) {
   const router = useRouter();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<"form" | "qr">("form");
+  const [orderCode, setOrderCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -51,11 +53,32 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
     loadCourse();
   }, [params.courseId]);
 
-  const mockOrderCode = "KP98241";
-
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep("qr");
+    if (!course) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await createOrder({
+        courseId: course.id,
+        customerName: form.name,
+        customerEmail: form.email,
+        customerPhone: form.phone,
+        amount: course.salePrice,
+      });
+
+      if (res.success && res.order) {
+        setOrderCode(res.order.code);
+        setStep("qr");
+      } else {
+        alert(res.error || "Không tạo được đơn hàng. Vui lòng thử lại.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối cơ sở dữ liệu.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSimulatePaid = () => {
@@ -127,15 +150,15 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
                   />
                 </div>
 
-                <Button type="submit" variant="gold" size="lg" className="w-full font-bold">
-                  Tiếp Tục Thanh Toán VietQR
+                <Button type="submit" variant="gold" size="lg" className="w-full font-bold" disabled={isSubmitting}>
+                  {isSubmitting ? "Đang khởi tạo đơn hàng..." : "Tiếp Tục Thanh Toán VietQR"}
                 </Button>
               </form>
             </div>
           ) : (
             <div className="rounded-xl border border-gold-500/40 bg-zinc-900/90 p-6 space-y-6 text-center">
               <div className="flex justify-between items-center text-xs text-zinc-400 pb-3 border-b border-zinc-800">
-                <span>Mã đơn hàng: <strong className="text-gold-400">{mockOrderCode}</strong></span>
+                <span>Mã đơn hàng: <strong className="text-gold-400">{orderCode}</strong></span>
                 <Badge variant="warning" className="animate-pulse">Đang chờ quét QR</Badge>
               </div>
 
@@ -145,7 +168,7 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
                 <div className="w-56 h-56 mx-auto bg-white p-3 rounded-xl shadow-2xl flex items-center justify-center">
                   {/* VietQR Image */}
                   <img
-                    src={`https://img.vietqr.io/image/tcb-${APP_CONFIG.bankAccount.accountNumber}-compact.png?amount=${course.salePrice}&addInfo=${mockOrderCode}&accountName=${encodeURIComponent(APP_CONFIG.bankAccount.accountName)}`}
+                    src={`https://img.vietqr.io/image/tcb-${APP_CONFIG.bankAccount.accountNumber}-compact.png?amount=${course.salePrice}&addInfo=${orderCode}&accountName=${encodeURIComponent(APP_CONFIG.bankAccount.accountName)}`}
                     alt="VietQR Standard"
                     className="w-full h-full object-contain"
                   />
@@ -171,7 +194,7 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
                 </div>
                 <div className="flex justify-between border-t border-zinc-800 pt-2">
                   <span className="text-zinc-400">Nội dung chuyển:</span>
-                  <strong className="text-gold-400 font-mono text-sm">{mockOrderCode}</strong>
+                  <strong className="text-gold-400 font-mono text-sm">{orderCode}</strong>
                 </div>
               </div>
 
