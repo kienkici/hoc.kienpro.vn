@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { APP_CONFIG, MOCK_NOTICES } from "@/lib/constants";
-import { getCourseByIdOrSlug, createOrder } from "@/server/actions/course";
+import { getCourseByIdOrSlug, createOrder, checkOrderStatus } from "@/server/actions/course";
 
 export default function CheckoutPage({ params }: { params: { courseId: string } }) {
   const router = useRouter();
@@ -26,6 +26,7 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
     phone: "",
   });
 
+  // 1. Live Countdown Timer
   useEffect(() => {
     if (step !== "qr") return;
 
@@ -41,6 +42,25 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
 
     return () => clearInterval(interval);
   }, [step]);
+
+  // 2. Poll Order Status to transition to success page on paid state
+  useEffect(() => {
+    if (step !== "qr" || !orderCode) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await checkOrderStatus(orderCode);
+        if (res.success && res.status === "paid") {
+          clearInterval(interval);
+          router.push("/checkout/success");
+        }
+      } catch (err) {
+        console.error("Error checking order status:", err);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [step, orderCode, router]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

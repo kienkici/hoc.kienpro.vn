@@ -491,3 +491,19 @@ export async function createOrder(data: {
     return { success: false, error: err.message };
   }
 }
+
+export async function checkOrderStatus(orderCode: string) {
+  try {
+    const supabase = createClient();
+    const { data: order, error } = await supabase
+      .from("orders")
+      .select("status")
+      .eq("code", orderCode)
+      .maybeSingle();
+
+    if (error) throw error;
+    return { success: true, status: order?.status || "pending" };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
