@@ -8,11 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 export default function StudentDashboardPage() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [overallProgress, setOverallProgress] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,19 +35,70 @@ export default function StudentDashboardPage() {
         .single();
       setProfile(profData);
 
-      // 2. Fetch Enrollments joined with courses
+      // 2. Fetch Enrollments joined with courses and nested lessons
       const { data: enrollData } = await supabase
         .from("enrollments")
         .select(`
           *,
           courses (
-            *
+            *,
+            course_modules (
+              lessons (
+                id
+              )
+            )
           )
         `)
         .eq("user_id", user.id)
         .eq("status", "ACTIVE");
 
-      setEnrollments(enrollData || []);
+      // 3. Fetch completed progress
+      const { data: progressData } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, course_id")
+        .eq("user_id", user.id)
+        .eq("completed", true);
+
+      // 4. Calculate progress percentage per course
+      const processed = (enrollData || []).map((enroll: any) => {
+        const course = enroll.courses;
+        if (!course) return enroll;
+
+        const lessonsList: string[] = [];
+        if (course.course_modules) {
+          course.course_modules.forEach((mod: any) => {
+            if (mod.lessons) {
+              mod.lessons.forEach((l: any) => {
+                lessonsList.push(l.id);
+              });
+            }
+          });
+        }
+
+        const totalLessons = lessonsList.length;
+        const completedCount = (progressData || []).filter(
+          (p: any) => p.course_id === course.id || lessonsList.includes(p.lesson_id)
+        ).length;
+
+        const percent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+        return {
+          ...enroll,
+          courses: {
+            ...course,
+            progressPercent: percent,
+            totalLessons,
+            completedCount
+          }
+        };
+      });
+
+      const totalActive = processed.length;
+      const averagePercent = totalActive > 0
+        ? Math.round(processed.reduce((acc: number, curr: any) => acc + (curr.courses?.progressPercent || 0), 0) / totalActive)
+        : 0;
+
+      setEnrollments(processed);
+      setOverallProgress(averagePercent);
       setIsLoading(false);
     };
 
@@ -81,7 +134,7 @@ export default function StudentDashboardPage() {
             <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Khóa học của tôi</span>
           </div>
           <div className="px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-center">
-            <span className="block text-2xl font-bold text-gold-400">100%</span>
+            <span className="block text-2xl font-bold text-gold-400">{overallProgress}%</span>
             <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Hoàn thành</span>
           </div>
         </div>
@@ -124,7 +177,7 @@ export default function StudentDashboardPage() {
                   </div>
 
                   <div className="p-4 space-y-4 flex-1 flex flex-col justify-between">
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Badge variant="secondary" className="text-[10px] uppercase">
                         {course.category === "thiet-ke" ? "Thiết Kế Web" : "Kỹ Năng"}
                       </Badge>
@@ -134,6 +187,15 @@ export default function StudentDashboardPage() {
                       <p className="text-[11px] text-zinc-400 line-clamp-2">
                         {course.short_description}
                       </p>
+                      
+                      {/* Dynamic Course progress bar */}
+                      <div className="space-y-1 pt-1">
+                        <div className="flex justify-between text-[10px] text-zinc-400">
+                          <span>Tiến độ học tập</span>
+                          <span className="font-bold text-gold-400">{course.progressPercent || 0}%</span>
+                        </div>
+                        <Progress value={course.progressPercent || 0} className="h-1.5 bg-zinc-800" />
+                      </div>
                     </div>
 
                     <div className="pt-2">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Play, 
   BookOpen, 
@@ -28,6 +29,7 @@ import { LessonChecklist } from "@/components/lesson/LessonChecklist";
 import { LessonNotes } from "@/components/lesson/LessonNotes";
 import { LessonResources } from "@/components/lesson/LessonResources";
 import { AIMentorPlaceholder } from "@/components/lesson/AIMentorPlaceholder";
+import { toast } from "sonner";
 
 interface Props {
   params: {
@@ -38,6 +40,7 @@ interface Props {
 
 export default function LessonLearnPage({ params }: Props) {
   const { courseSlug, lessonSlug } = params;
+  const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(true);
   const [course, setCourse] = useState<any>(null);
@@ -142,7 +145,7 @@ export default function LessonLearnPage({ params }: Props) {
           .from("lesson_progress")
           .select("lesson_id")
           .eq("user_id", user.id)
-          .eq("status", "COMPLETED");
+          .eq("completed", true);
         const completedIds = progress?.map((p) => p.lesson_id) || [];
         setCompletedLessons(completedIds);
         setIsCompleted(completedIds.includes(foundLesson.id));
@@ -154,8 +157,25 @@ export default function LessonLearnPage({ params }: Props) {
     fetchLearnData();
   }, [courseSlug, lessonSlug]);
 
+  const getNextLessonUrl = () => {
+    const allLessons: any[] = [];
+    modules.forEach((mod) => {
+      if (mod.lessons) {
+        const sortedLessons = [...mod.lessons].sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0));
+        allLessons.push(...sortedLessons);
+      }
+    });
+
+    const currentIndex = allLessons.findIndex((l) => l.id === currentLesson.id);
+    if (currentIndex !== -1 && currentIndex < allLessons.length - 1) {
+      const nextLesson = allLessons[currentIndex + 1];
+      return `/learn/${courseSlug}/${nextLesson.slug}`;
+    }
+    return null;
+  };
+
   const handleMarkComplete = async () => {
-    if (!currentLesson || !userId) return;
+    if (!currentLesson || !userId || !course) return;
     
     const supabase = createClient();
     const newStatus = !isCompleted;
@@ -163,20 +183,88 @@ export default function LessonLearnPage({ params }: Props) {
     setIsCompleted(newStatus);
     if (newStatus) {
       setCompletedLessons((prev) => [...prev, currentLesson.id]);
-      await supabase.from("lesson_progress").upsert({
+      const { error } = await supabase.from("lesson_progress").upsert({
         user_id: userId,
+        course_id: course.id,
         lesson_id: currentLesson.id,
-        status: "COMPLETED",
+        completed: true,
+        completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }, { onConflict: "user_id,lesson_id" });
+
+      if (error) {
+        console.error("Lỗi lưu tiến độ học tập:", error);
+      }
+
+      const nextUrl = getNextLessonUrl();
+      if (nextUrl) {
+        toast.success("Bài học hoàn thành! Đang chuyển sang bài tiếp theo...");
+        router.push(nextUrl);
+      } else {
+        toast.success("Chúc mừng! Bạn đã hoàn thành bài học cuối cùng!");
+      }
     } else {
       setCompletedLessons((prev) => prev.filter((id) => id !== currentLesson.id));
       await supabase.from("lesson_progress").delete().match({
         user_id: userId,
         lesson_id: currentLesson.id
       });
+      toast.info("Đã hủy đánh dấu hoàn thành bài học.");
     }
   };
+
+  // Tự động chuyển bài khi xem xong video Bunny Stream
+  useEffect(() => {
+    if (!currentLesson || !userId || isCompleted || !course) return;
+
+    const handlePlayerMessage = async (e: MessageEvent) => {
+      if (!e.origin.includes("mediadelivery.net")) return;
+
+      let isEnded = false;
+      try {
+        if (typeof e.data === "string") {
+          if (e.data.includes("ended") || e.data.includes("complete")) {
+            isEnded = true;
+          } else {
+            const parsed = JSON.parse(e.data);
+            if (parsed.event === "ended" || parsed.value === "ended" || parsed.event === "player:ended") {
+              isEnded = true;
+            }
+          }
+        } else if (e.data && typeof e.data === "object") {
+          if (e.data.event === "ended" || e.data.value === "ended" || e.data.event === "player:ended") {
+            isEnded = true;
+          }
+        }
+      } catch (err) {}
+
+      if (isEnded) {
+        const supabase = createClient();
+        setIsCompleted(true);
+        setCompletedLessons((prev) => [...prev, currentLesson.id]);
+        
+        await supabase.from("lesson_progress").upsert({
+          user_id: userId,
+          course_id: course.id,
+          lesson_id: currentLesson.id,
+          completed: true,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "user_id,lesson_id" });
+
+        const nextUrl = getNextLessonUrl();
+        if (nextUrl) {
+          toast.success("Đã học xong video! Tự động chuyển sang bài mới...");
+          router.push(nextUrl);
+        } else {
+          toast.success("Chúc mừng! Bạn đã xem xong bài học cuối cùng!");
+        }
+      }
+    };
+
+    window.addEventListener("message", handlePlayerMessage);
+    return () => window.removeEventListener("message", handlePlayerMessage);
+  }, [currentLesson, userId, isCompleted, modules, course, router]);
 
   if (isLoading) {
     return (
