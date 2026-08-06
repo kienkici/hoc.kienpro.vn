@@ -441,3 +441,19 @@ export async function reorderModules(moduleIds: string[]) {
     return { success: false, error: err.message };
   }
 }
+
+export async function getCourseByIdOrSlug(idOrSlug: string) {
+  const supabase = createClient();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+
+  let query = supabase.from("courses").select("*").is("deleted_at", null);
+
+  if (isUuid) {
+    query = query.eq("id", idOrSlug);
+  } else {
+    query = query.eq("slug", idOrSlug);
+  }
+
+  const { data: course } = await query.maybeSingle();
+  return course;
+}

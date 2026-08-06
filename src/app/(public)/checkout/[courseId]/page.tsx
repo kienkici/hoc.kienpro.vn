@@ -1,25 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { QrCode, ShieldCheck, Clock, CheckCircle2, Copy, ArrowLeft } from "lucide-react";
-import { MOCK_COURSES, MOCK_ORDERS } from "@/lib/mock-data";
+import { MOCK_COURSES } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { APP_CONFIG, MOCK_NOTICES } from "@/lib/constants";
+import { getCourseByIdOrSlug } from "@/server/actions/course";
 
 export default function CheckoutPage({ params }: { params: { courseId: string } }) {
   const router = useRouter();
-  const course = MOCK_COURSES.find((c) => c.id === params.courseId) || MOCK_COURSES[0];
+  const [course, setCourse] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<"form" | "qr">("form");
 
   const [form, setForm] = useState({
-    name: "Trần Văn Nam",
-    email: "hocvien.kienpro@gmail.com",
-    phone: "0987.654.321",
+    name: "",
+    email: "",
+    phone: "",
   });
+
+  useEffect(() => {
+    async function loadCourse() {
+      try {
+        const data = await getCourseByIdOrSlug(params.courseId);
+        if (data) {
+          setCourse({
+            id: data.id,
+            title: data.title,
+            slug: data.slug,
+            price: Number(data.original_price),
+            salePrice: Number(data.sale_price),
+            thumbnailUrl: data.thumbnail_url || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
+            instructorName: "Kiên Pro",
+          });
+        } else {
+          // Fallback to first mock course if slug/id not found in DB
+          setCourse(MOCK_COURSES[0]);
+        }
+      } catch (err) {
+        console.error("Error loading course for checkout:", err);
+        setCourse(MOCK_COURSES[0]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCourse();
+  }, [params.courseId]);
 
   const mockOrderCode = "KP98241";
 
@@ -29,13 +59,21 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
   };
 
   const handleSimulatePaid = () => {
-    // Demo Mock redirect to success page
     router.push("/checkout/success");
   };
 
   const handleSimulateFailed = () => {
     router.push("/checkout/failed");
   };
+
+  if (loading || !course) {
+    return (
+      <div className="py-24 max-w-4xl mx-auto px-4 flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-zinc-400 text-xs">Đang tải thông tin đơn hàng...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12 container max-w-4xl mx-auto px-4 space-y-8">
@@ -138,19 +176,21 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
               </div>
 
               {/* MOCK ACTIONS FOR TESTER */}
-              <div className="pt-4 border-t border-zinc-800 space-y-2">
-                <p className="text-[11px] text-zinc-400 font-semibold">
-                  [DEMO TESTER ACTIONS - GIẢ LẬP KẾT QUẢ WEBHOOK]
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="gold" size="sm" onClick={handleSimulatePaid} className="flex-1 text-xs">
-                    Giả lập Webhook Thành Công
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={handleSimulateFailed} className="flex-1 text-xs">
-                    Giả lập Thất Bại
-                  </Button>
+              {process.env.NODE_ENV === "development" && (
+                <div className="pt-4 border-t border-zinc-800 space-y-2">
+                  <p className="text-[11px] text-zinc-400 font-semibold">
+                    [DEMO TESTER ACTIONS - GIẢ LẬP KẾT QUẢ WEBHOOK]
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="gold" size="sm" onClick={handleSimulatePaid} className="flex-1 text-xs">
+                      Giả lập Webhook Thành Công
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={handleSimulateFailed} className="flex-1 text-xs">
+                      Giả lập Thất Bại
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>

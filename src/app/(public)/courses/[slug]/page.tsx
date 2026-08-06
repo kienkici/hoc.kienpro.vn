@@ -147,7 +147,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
             </div>
 
             <Button size="lg" variant="gold" asChild className="w-full text-base font-bold">
-              <NextLink href={`/checkout/${course.id}`}>
+              <NextLink href={`/checkout/${course.slug}`}>
                 Đăng Ký Mua Ngay <ArrowRight className="w-5 h-5 ml-2" />
               </NextLink>
             </Button>

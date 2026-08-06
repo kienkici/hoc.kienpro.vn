@@ -2,16 +2,16 @@ export const APP_CONFIG = {
   name: "KIENPRO LMS",
   brandName: "Kiên Pro",
   slogan: "Nền tảng đào tạo kỹ năng & kinh doanh cao cấp",
-  supportEmail: "hotro@kienpro.com",
-  supportPhone: "0988.123.456",
+  supportEmail: "info@kienpro.vn",
+  supportPhone: "0961831111",
   bankAccount: {
     bankName: "Techcombank",
-    accountNumber: "190382910291",
-    accountName: "KIEN PRO",
+    accountNumber: "2856868686",
+    accountName: "PHAM TRUNG KIEN",
   },
 };
 
 export const MOCK_NOTICES = {
-  isMockData: true,
-  noticeText: "[DEMO MOCK UI] Dữ liệu hiển thị đang sử dụng Mock State. Chưa kết nối DB thật.",
+  isMockData: false,
+  noticeText: "Hệ thống thanh toán quét mã QR tự động kích hoạt khóa học trong 10 giây qua VietQR.",
 };
