@@ -17,7 +17,9 @@ import {
   FileText, 
   ArrowLeft,
   Loader2,
-  Lock
+  Lock,
+  Menu,
+  X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { getBunnyVideoUrl } from "@/server/actions/course";
@@ -45,6 +47,7 @@ export default function LessonLearnPage({ params }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [isLessonChanging, setIsLessonChanging] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
@@ -330,12 +333,33 @@ export default function LessonLearnPage({ params }: Props) {
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-zinc-950 text-zinc-100">
       
-      {/* LEFT COLUMN: Course Navigation Sidebar (Desktop) */}
-      <div className="w-full lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-800 bg-zinc-900/30 flex flex-col justify-between">
-        <div className="p-4 border-b border-zinc-800 space-y-3">
-          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" /> Bảng điều khiển
-          </Link>
+      {/* Mobile Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* LEFT COLUMN: Course Navigation Sidebar (Desktop fixed / Mobile sliding drawer) */}
+      <div className={`
+        fixed inset-y-0 left-0 w-80 bg-zinc-900 border-r border-zinc-800 z-50 transform transition-transform duration-300 flex flex-col justify-between
+        lg:static lg:w-80 lg:translate-x-0 lg:z-auto lg:bg-zinc-900/30
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+      `}>
+        <div className="p-4 border-b border-zinc-800 space-y-3 relative">
+          <div className="flex justify-between items-center">
+            <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors">
+              <ArrowLeft className="w-3.5 h-3.5" /> Bảng điều khiển
+            </Link>
+            <button 
+              onClick={() => setIsSidebarOpen(false)} 
+              className="lg:hidden p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              title="Đóng danh sách"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
           <h2 className="font-extrabold text-sm text-white line-clamp-2 leading-snug">
             {course.title}
           </h2>
@@ -364,6 +388,7 @@ export default function LessonLearnPage({ params }: Props) {
                     <Link
                       key={les.id}
                       href={`/learn/${courseSlug}/${les.slug}`}
+                      onClick={() => setIsSidebarOpen(false)}
                       className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-medium transition-all ${
                         isActive
                           ? "bg-gold-500/10 border-gold-500/50 text-gold-400"
@@ -391,6 +416,20 @@ export default function LessonLearnPage({ params }: Props) {
 
       {/* RIGHT COLUMN: Video Player & Tabs Details */}
       <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950">
+        {/* Floating Quick Navigation Bar on Mobile */}
+        <div className="lg:hidden p-3 bg-zinc-900/80 backdrop-blur border-b border-zinc-800 flex items-center justify-between sticky top-0 z-30">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsSidebarOpen(true)} 
+            className="text-xs font-bold gap-1.5 text-gold-400 border-gold-500/30 hover:bg-gold-500/10 hover:text-gold-300"
+          >
+            <Menu className="w-3.5 h-3.5" /> Danh sách bài học
+          </Button>
+          <div className="text-[10px] text-zinc-400 font-semibold max-w-[180px] truncate">
+            Đang học: {currentLesson.title}
+          </div>
+        </div>
         {/* Secure Video Player */}
         <div className="bg-zinc-950 p-4 lg:p-6 flex flex-col items-center">
           <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl relative">
