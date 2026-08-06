@@ -98,7 +98,8 @@ export default function LessonLearnPage({ params }: Props) {
             )
           `)
           .eq("course_id", courseData.id)
-          .order("order_index", { ascending: true }),
+          .order("order_index", { ascending: true })
+          .order("order_index", { foreignTable: "lessons", ascending: true }),
         user ? supabase
           .from("lesson_progress")
           .select("lesson_id")
@@ -106,7 +107,11 @@ export default function LessonLearnPage({ params }: Props) {
           .eq("completed", true) : Promise.resolve({ data: null })
       ]);
 
-      const modulesData = modulesRes.data || [];
+      // Sắp xếp bài giảng trong mỗi chương học theo order_index tăng dần
+      const modulesData = (modulesRes.data || []).map((mod: any) => ({
+        ...mod,
+        lessons: (mod.lessons || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+      }));
       setModules(modulesData);
 
       if (user && progressRes?.data) {
