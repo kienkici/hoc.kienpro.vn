@@ -50,13 +50,20 @@ export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
     }
 
     const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID || "718961";
-    const tokenKey = process.env.BUNNY_TOKEN_AUTHENTICATION_KEY || "59de0e0f-78e0-4cae-91a9-e68a6de6a5f9";
+    const tokenKey = process.env.BUNNY_TOKEN_AUTHENTICATION_KEY;
     
-    const expires = Math.floor(Date.now() / 1000) + 3600;
-    const input = tokenKey + videoId + expires;
-    const token = crypto.createHash("sha256").update(input).digest("hex");
-
-    const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?token=${token}&expires=${expires}`;
+    let embedUrl = "";
+    
+    // Nếu chưa cấu hình Token Key bảo mật riêng (hoặc đang dùng key mặc định thử nghiệm), dùng link nhúng sạch
+    if (!tokenKey || tokenKey === "59de0e0f-78e0-4cae-91a9-e68a6de6a5f9") {
+      embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
+    } else {
+      // Nếu đã cấu hình Token Key bảo mật riêng, thực hiện ký URL để chống chia sẻ lậu
+      const expires = Math.floor(Date.now() / 1000) + 3600;
+      const input = tokenKey + videoId + expires;
+      const token = crypto.createHash("sha256").update(input).digest("hex");
+      embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?token=${token}&expires=${expires}`;
+    }
     
     return { success: true, embedUrl };
   } catch (err: any) {
