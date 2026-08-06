@@ -1,27 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface ChecklistItem {
   id: string;
-  text: string;
-  completed: boolean;
+  title?: string;
+  text?: string;
+  completed?: boolean;
 }
 
 interface LessonChecklistProps {
   initialItems?: ChecklistItem[];
+  lessonId: string;
 }
 
-export function LessonChecklist({ initialItems = [] }: LessonChecklistProps) {
-  const [items, setItems] = useState<ChecklistItem[]>(initialItems);
+export function LessonChecklist({ initialItems = [], lessonId }: LessonChecklistProps) {
+  const [items, setItems] = useState<ChecklistItem[]>([]);
+
+  useEffect(() => {
+    // Tải tiến độ checklist từ localStorage
+    const savedStates = localStorage.getItem(`checklist_${lessonId}`);
+    const completedIds = savedStates ? JSON.parse(savedStates) : [];
+    
+    setItems(
+      initialItems.map((item) => ({
+        ...item,
+        completed: completedIds.includes(item.id),
+      }))
+    );
+  }, [initialItems, lessonId]);
 
   const toggleItem = (id: string) => {
-    setItems(
-      items.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
+    const updated = items.map((item) =>
+      item.id === id ? { ...item, completed: !item.completed } : item
     );
+    setItems(updated);
+    
+    // Lưu lại tiến độ checklist vào localStorage
+    const completedIds = updated.filter((item) => item.completed).map((item) => item.id);
+    localStorage.setItem(`checklist_${lessonId}`, JSON.stringify(completedIds));
   };
 
   if (items.length === 0) {
@@ -42,16 +60,16 @@ export function LessonChecklist({ initialItems = [] }: LessonChecklistProps) {
           <div key={item.id} className="flex items-center gap-2.5">
             <Checkbox
               id={item.id}
-              checked={item.completed}
+              checked={!!item.completed}
               onCheckedChange={() => toggleItem(item.id)}
             />
             <label
               htmlFor={item.id}
-              className={`text-xs cursor-pointer select-none ${
+              className={`text-xs cursor-pointer select-none transition-colors ${
                 item.completed ? "line-through text-zinc-500" : "text-zinc-200 font-medium"
               }`}
             >
-              {item.text}
+              {item.title || item.text || "Mục checklist"}
             </label>
           </div>
         ))}

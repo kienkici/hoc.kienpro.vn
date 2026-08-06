@@ -1,87 +1,125 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, Clock, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Save, Loader2, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MockLessonNote } from "@/lib/mock-data";
-import { formatDuration } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface LessonNotesProps {
-  initialNotes?: MockLessonNote[];
+  userId: string;
+  lessonId: string;
 }
 
-export function LessonNotes({ initialNotes = [] }: LessonNotesProps) {
-  const [notes, setNotes] = useState<MockLessonNote[]>(initialNotes);
-  const [newNote, setNewNote] = useState("");
+export function LessonNotes({ userId, lessonId }: LessonNotesProps) {
+  const [noteContent, setNoteContent] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddNote = () => {
-    if (!newNote.trim()) return;
-    const created: MockLessonNote = {
-      id: `note-${Date.now()}`,
-      lessonId: "les-101",
-      lessonTitle: "Bài 1: Giới thiệu KIENPRO LMS",
-      courseTitle: "Khóa Học Thiết Kế Website AI",
-      timestampSeconds: 120,
-      content: newNote,
-      createdAt: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+  useEffect(() => {
+    const fetchNote = async () => {
+      if (!userId || !lessonId) return;
+      setIsLoading(true);
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("student_notes")
+          .select("content")
+          .eq("user_id", userId)
+          .eq("lesson_id", lessonId)
+          .maybeSingle();
+
+        if (data) {
+          setNoteContent(data.content || "");
+        } else {
+          setNoteContent("");
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải ghi chú:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    setNotes([created, ...notes]);
-    setNewNote("");
+
+    fetchNote();
+  }, [userId, lessonId]);
+
+  const handleSaveNote = async () => {
+    if (!userId || !lessonId) return;
+    setIsSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from("student_notes").upsert({
+        user_id: userId,
+        lesson_id: lessonId,
+        content: noteContent,
+        video_timestamp_seconds: 0,
+        created_at: new Date().toISOString()
+      }, { onConflict: "user_id,lesson_id" });
+
+      if (error) {
+        console.error("Lỗi khi lưu ghi chú:", error);
+        toast.error("Không thể lưu ghi chú. Vui lòng thử lại!");
+      } else {
+        toast.success("Đã lưu ghi chú bài học thành công!");
+      }
+    } catch (err) {
+      console.error("Lỗi ngoại lệ khi lưu ghi chú:", err);
+      toast.error("Đã xảy ra lỗi kết nối. Vui lòng thử lại!");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setNotes(notes.filter((n) => n.id !== id));
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8 gap-2 text-zinc-500 text-xs">
+        <Loader2 className="w-4 h-4 animate-spin text-gold-400" />
+        <span>Đang tải ghi chú đã lưu...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {/* Create Note Input */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-3">
-        <label className="text-xs font-semibold text-zinc-300 block">
-          Tạo ghi chú tại phút 02:00
-        </label>
+      {/* Rich Notepad Editor */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-4">
+        <div className="flex items-center gap-2 text-zinc-200">
+          <FileEdit className="w-4 h-4 text-gold-400" />
+          <h4 className="text-xs font-bold uppercase tracking-wider">
+            Sổ tay ghi chú bài học
+          </h4>
+        </div>
+        
         <textarea
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-          placeholder="Nhập ghi chú quan trọng cho bài học này..."
-          rows={3}
-          className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-gold-500"
+          value={noteContent}
+          onChange={(e) => setNoteContent(e.target.value)}
+          placeholder="Hãy viết lại các kiến thức quan trọng hoặc lưu trữ các link thực hành của bài học này tại đây..."
+          rows={8}
+          className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-gold-500 leading-relaxed resize-y"
         />
+        
         <div className="flex justify-end">
-          <Button size="sm" variant="gold" onClick={handleAddNote}>
-            <Plus className="w-3.5 h-3.5 mr-1" /> Lưu Ghi Chú
+          <Button 
+            size="sm" 
+            variant="gold" 
+            onClick={handleSaveNote} 
+            disabled={isSaving}
+            className="font-bold text-xs"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                Đang lưu...
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5 mr-1.5" />
+                Lưu Ghi Chú
+              </>
+            )}
           </Button>
         </div>
-      </div>
-
-      {/* List Notes */}
-      <div className="space-y-2.5">
-        {notes.length === 0 ? (
-          <p className="text-xs text-zinc-500 text-center py-6">Chưa có ghi chú nào cho bài học này.</p>
-        ) : (
-          notes.map((note) => (
-            <div
-              key={note.id}
-              className="p-3.5 rounded-lg border border-zinc-800 bg-zinc-900/40 flex items-start justify-between gap-3 text-xs"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-gold-400 font-semibold">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{formatDuration(note.timestampSeconds)}</span>
-                  <span className="text-zinc-500 font-normal">• {note.createdAt}</span>
-                </div>
-                <p className="text-zinc-200 leading-relaxed">{note.content}</p>
-              </div>
-              <button
-                onClick={() => handleDelete(note.id)}
-                className="text-zinc-500 hover:text-red-400 p-1"
-                title="Xóa ghi chú"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))
-        )}
       </div>
     </div>
   );

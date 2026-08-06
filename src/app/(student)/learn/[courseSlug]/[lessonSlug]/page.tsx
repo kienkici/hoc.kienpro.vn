@@ -502,16 +502,16 @@ export default function LessonLearnPage({ params }: Props) {
         {/* Tab Details */}
         <div className="flex-1 overflow-y-auto px-4 lg:px-8 pb-8 max-w-5xl mx-auto w-full">
           <Tabs defaultValue="content" className="w-full space-y-6">
-            <TabsList className="bg-zinc-900 border border-zinc-800 p-1">
-              <TabsTrigger value="content" className="text-xs px-4">Nội Dung</TabsTrigger>
-              <TabsTrigger value="checklist" className="text-xs px-4">
+            <TabsList className="bg-zinc-900 border border-zinc-800 p-1 w-full flex overflow-x-auto justify-start lg:justify-center scrollbar-none whitespace-nowrap min-w-0">
+              <TabsTrigger value="content" className="text-xs px-4 shrink-0">Nội Dung</TabsTrigger>
+              <TabsTrigger value="checklist" className="text-xs px-4 shrink-0">
                 Checklist ({currentLesson.checklist?.length || 0})
               </TabsTrigger>
-              <TabsTrigger value="resources" className="text-xs px-4">
+              <TabsTrigger value="resources" className="text-xs px-4 shrink-0">
                 Tài Liệu ({currentLesson.resources?.length || 0})
               </TabsTrigger>
-              <TabsTrigger value="notes" className="text-xs px-4">Ghi Chú</TabsTrigger>
-              <TabsTrigger value="mentor" className="text-xs px-4 text-gold-400">AI Mentor</TabsTrigger>
+              <TabsTrigger value="notes" className="text-xs px-4 shrink-0">Ghi Chú</TabsTrigger>
+              <TabsTrigger value="mentor" className="text-xs px-4 shrink-0 text-gold-400">AI Mentor</TabsTrigger>
             </TabsList>
 
             <TabsContent value="content" className="space-y-4">
@@ -529,6 +529,7 @@ export default function LessonLearnPage({ params }: Props) {
             <TabsContent value="checklist">
               <LessonChecklist 
                 initialItems={currentLesson.checklist || []}
+                lessonId={currentLesson.id}
               />
             </TabsContent>
 
@@ -539,7 +540,10 @@ export default function LessonLearnPage({ params }: Props) {
             </TabsContent>
 
             <TabsContent value="notes">
-              <LessonNotes />
+              <LessonNotes 
+                userId={userId}
+                lessonId={currentLesson.id}
+              />
             </TabsContent>
 
             <TabsContent value="mentor">
