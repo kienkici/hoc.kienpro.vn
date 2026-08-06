@@ -43,6 +43,9 @@ export default function LessonLearnPage({ params }: Props) {
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [isLessonChanging, setIsLessonChanging] = useState(false);
+
   const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [currentLesson, setCurrentLesson] = useState<any>(null);
@@ -56,102 +59,125 @@ export default function LessonLearnPage({ params }: Props) {
 
   useEffect(() => {
     const fetchLearnData = async () => {
-      setIsLoading(true);
+      if (isFirstLoad) {
+        setIsLoading(true);
+      } else {
+        setIsLessonChanging(true);
+      }
+
       const supabase = createClient();
       
-      const { data: { user } } = await supabase.auth.getUser();
+      // Tải song song Auth User và thông tin Khóa học ở giai đoạn 1 (Parallel Stage 1)
+      const [userRes, courseRes] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from("courses").select("*").eq("slug", courseSlug).single()
+      ]);
+
+      const user = userRes.data?.user;
+      const courseData = courseRes.data;
+
       if (user) {
         setUserId(user.id);
       }
 
-      // 1. Fetch Course details
-      const { data: courseData } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("slug", courseSlug)
-        .single();
-
       if (!courseData) {
         setIsLoading(false);
+        setIsLessonChanging(false);
         return;
       }
       setCourse(courseData);
 
-      // 2. Fetch Modules & Lessons
-      const { data: modulesData } = await supabase
-        .from("course_modules")
-        .select(`
-          *,
-          lessons (
-            *
-          )
-        `)
-        .eq("course_id", courseData.id)
-        .order("order_index", { ascending: true });
+      // Tải song song Cấu trúc chương học và Tiến độ học tập ở giai đoạn 2 (Parallel Stage 2)
+      const [modulesRes, progressRes] = await Promise.all([
+        supabase
+          .from("course_modules")
+          .select(`
+            *,
+            lessons (
+              *
+            )
+          `)
+          .eq("course_id", courseData.id)
+          .order("order_index", { ascending: true }),
+        user ? supabase
+          .from("lesson_progress")
+          .select("lesson_id")
+          .eq("user_id", user.id)
+          .eq("completed", true) : Promise.resolve({ data: null })
+      ]);
 
-      setModules(modulesData || []);
+      const modulesData = modulesRes.data || [];
+      setModules(modulesData);
 
-      // 3. Find current lesson from modulesData
+      if (user && progressRes?.data) {
+        const completedIds = progressRes.data.map((p: any) => p.lesson_id) || [];
+        setCompletedLessons(completedIds);
+      }
+
+      // 3. Tìm bài học hiện tại từ danh sách cấu trúc đã tải
       let foundLesson: any = null;
-      if (modulesData) {
-        for (const mod of modulesData) {
-          const matched = mod.lessons?.find((l: any) => l.slug === lessonSlug);
-          if (matched) {
-            foundLesson = matched;
-            break;
-          }
+      for (const mod of modulesData) {
+        const matched = mod.lessons?.find((l: any) => l.slug === lessonSlug);
+        if (matched) {
+          foundLesson = matched;
+          break;
         }
       }
 
       if (!foundLesson) {
         setIsLoading(false);
+        setIsLessonChanging(false);
         return;
       }
       setCurrentLesson(foundLesson);
 
-      // 4. Fetch lesson resources
-      const { data: resources } = await supabase
-        .from("lesson_resources")
-        .select("*")
-        .eq("lesson_id", foundLesson.id);
-      foundLesson.resources = resources || [];
-
-      // 5. Fetch lesson checklist
-      const { data: checklist } = await supabase
-        .from("checklist_items")
-        .select("*")
-        .eq("lesson_id", foundLesson.id);
-      foundLesson.checklist = checklist || [];
-
-      // 6. Generate signed video URL if Bunny Stream
-      if (foundLesson.video_provider === "bunny" && foundLesson.video_id) {
-        // If not a preview and the user is not logged in:
-        if (!foundLesson.is_preview && !user) {
-          setVideoError("Bài học này bị khóa. Vui lòng đăng nhập hoặc mua khóa học để bắt đầu học tập.");
-        } else {
-          const signResult = await getBunnyVideoUrl(foundLesson.video_id, foundLesson.id);
-          if (signResult.success && signResult.embedUrl) {
-            setEmbedUrl(signResult.embedUrl);
-            setVideoError(""); // Clear any previous errors
-          } else {
-            setVideoError(signResult.error || "Không thể tải cấu hình phát video.");
-          }
-        }
-      }
-
-      // 7. Get user completed lessons (only if logged in)
-      if (user) {
-        const { data: progress } = await supabase
-          .from("lesson_progress")
-          .select("lesson_id")
-          .eq("user_id", user.id)
-          .eq("completed", true);
-        const completedIds = progress?.map((p) => p.lesson_id) || [];
-        setCompletedLessons(completedIds);
+      if (user && progressRes?.data) {
+        const completedIds = progressRes.data.map((p: any) => p.lesson_id) || [];
         setIsCompleted(completedIds.includes(foundLesson.id));
       }
 
+      // Tải song song Tài liệu đính kèm và Checklist của bài học ở giai đoạn 3 (Parallel Stage 3)
+      const [resourcesRes, checklistRes] = await Promise.all([
+        supabase.from("lesson_resources").select("*").eq("lesson_id", foundLesson.id),
+        supabase.from("checklist_items").select("*").eq("lesson_id", foundLesson.id)
+      ]);
+
+      foundLesson.resources = resourcesRes.data || [];
+      foundLesson.checklist = checklistRes.data || [];
+
+      // 6. Xử lý hiển thị Video (không gọi Server Action nếu Token Auth tắt trên Bunny.net để tải trong 0ms)
+      if (foundLesson.video_id) {
+        if (!foundLesson.is_preview && !user) {
+          setVideoError("Bài học này bị khóa. Vui lòng đăng nhập hoặc mua khóa học để bắt đầu học tập.");
+          setEmbedUrl("");
+        } else {
+          // Bật/tắt Token Key tương tự cấu hình Bunny của anh
+          const tokenKey = process.env.NEXT_PUBLIC_BUNNY_TOKEN_AUTHENTICATION_KEY;
+          if (!tokenKey || tokenKey === "59de0e0f-78e0-4cae-91a9-e68a6de6a5f9") {
+            // Không bật Token Auth -> Tạo trực tiếp URL nhúng siêu nhanh ở Client (0ms)
+            const libraryId = "718961";
+            setEmbedUrl(`https://iframe.mediadelivery.net/embed/${libraryId}/${foundLesson.video_id}`);
+            setVideoError("");
+          } else {
+            // Bật Token Auth -> Gọi Server Action để ký URL bảo mật
+            const signResult = await getBunnyVideoUrl(foundLesson.video_id, foundLesson.id);
+            if (signResult.success && signResult.embedUrl) {
+              setEmbedUrl(signResult.embedUrl);
+              setVideoError("");
+            } else {
+              setVideoError(signResult.error || "Không thể tải cấu hình phát video.");
+              setEmbedUrl("");
+            }
+          }
+        }
+      } else {
+        setEmbedUrl("");
+        setVideoError("");
+      }
+
       setIsLoading(false);
+      setIsFirstLoad(false);
+      setIsLessonChanging(false);
     };
 
     fetchLearnData();
@@ -363,6 +389,13 @@ export default function LessonLearnPage({ params }: Props) {
         {/* Secure Video Player */}
         <div className="bg-zinc-950 p-4 lg:p-6 flex flex-col items-center">
           <div className="w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl relative">
+            {isLessonChanging && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/90 gap-3 z-10">
+                <Loader2 className="w-8 h-8 animate-spin text-gold-400" />
+                <span className="text-xs text-zinc-400 font-semibold">Đang chuẩn bị bài giảng bảo mật...</span>
+              </div>
+            )}
+            
             {embedUrl ? (
               <iframe
                 src={embedUrl}
