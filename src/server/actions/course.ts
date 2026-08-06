@@ -7,8 +7,6 @@ import crypto from "crypto";
 export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Chưa đăng nhập");
 
     const { data: lesson } = await supabase
       .from("lessons")
@@ -22,6 +20,9 @@ export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
     if (lesson.is_preview) {
       hasAccess = true;
     } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Chưa đăng nhập");
+
       const { data: enrollment } = await supabase
         .from("enrollments")
         .select("id")

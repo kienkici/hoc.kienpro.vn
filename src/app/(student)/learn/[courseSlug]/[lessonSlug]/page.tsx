@@ -57,11 +57,9 @@ export default function LessonLearnPage({ params }: Props) {
       const supabase = createClient();
       
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsLoading(false);
-        return;
+      if (user) {
+        setUserId(user.id);
       }
-      setUserId(user.id);
 
       // 1. Fetch Course details
       const { data: courseData } = await supabase
@@ -124,23 +122,31 @@ export default function LessonLearnPage({ params }: Props) {
 
       // 6. Generate signed video URL if Bunny Stream
       if (foundLesson.video_provider === "bunny" && foundLesson.video_id) {
-        const signResult = await getBunnyVideoUrl(foundLesson.video_id, foundLesson.id);
-        if (signResult.success && signResult.embedUrl) {
-          setEmbedUrl(signResult.embedUrl);
+        // If not a preview and the user is not logged in:
+        if (!foundLesson.is_preview && !user) {
+          setVideoError("Bài học này bị khóa. Vui lòng đăng nhập hoặc mua khóa học để bắt đầu học tập.");
         } else {
-          setVideoError(signResult.error || "Không thể tải cấu hình phát video.");
+          const signResult = await getBunnyVideoUrl(foundLesson.video_id, foundLesson.id);
+          if (signResult.success && signResult.embedUrl) {
+            setEmbedUrl(signResult.embedUrl);
+            setVideoError(""); // Clear any previous errors
+          } else {
+            setVideoError(signResult.error || "Không thể tải cấu hình phát video.");
+          }
         }
       }
 
-      // 7. Get user completed lessons
-      const { data: progress } = await supabase
-        .from("lesson_progress")
-        .select("lesson_id")
-        .eq("user_id", user.id)
-        .eq("status", "COMPLETED");
-      const completedIds = progress?.map((p) => p.lesson_id) || [];
-      setCompletedLessons(completedIds);
-      setIsCompleted(completedIds.includes(foundLesson.id));
+      // 7. Get user completed lessons (only if logged in)
+      if (user) {
+        const { data: progress } = await supabase
+          .from("lesson_progress")
+          .select("lesson_id")
+          .eq("user_id", user.id)
+          .eq("status", "COMPLETED");
+        const completedIds = progress?.map((p) => p.lesson_id) || [];
+        setCompletedLessons(completedIds);
+        setIsCompleted(completedIds.includes(foundLesson.id));
+      }
 
       setIsLoading(false);
     };
@@ -277,10 +283,15 @@ export default function LessonLearnPage({ params }: Props) {
                 allowFullScreen
               />
             ) : videoError ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-900/90 text-red-400 gap-2">
-                <Lock className="w-12 h-12 text-zinc-600 mb-2" />
-                <h4 className="text-sm font-bold text-white">Lỗi Bản Quyền Phát Video</h4>
-                <p className="text-xs text-zinc-400 max-w-md">{videoError}</p>
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-950 text-zinc-300 gap-3">
+                <Lock className="w-10 h-10 text-gold-400/80 mb-1" />
+                <h4 className="text-base font-bold text-white">Nội dung này đã bị khóa</h4>
+                <p className="text-xs text-zinc-400 max-w-md px-4">{videoError}</p>
+                {!userId && (
+                  <Button variant="gold" size="sm" className="mt-2 font-bold text-xs" asChild>
+                    <Link href={`/checkout/${courseSlug}`}>Đăng Ký Khóa Học Ngay</Link>
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-900/90 gap-2">
