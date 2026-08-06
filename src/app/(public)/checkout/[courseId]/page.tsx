@@ -143,10 +143,10 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
               <div className="space-y-3">
                 <h3 className="text-base font-bold text-white">Quét Mã QR Bằng App Ngân Hàng</h3>
                 <div className="w-56 h-56 mx-auto bg-white p-3 rounded-xl shadow-2xl flex items-center justify-center">
-                  {/* Mock VietQR Image */}
+                  {/* VietQR Image */}
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=STK:${APP_CONFIG.bankAccount.accountNumber}-NOIDUNG:${mockOrderCode}-SOTIEN:${course.salePrice}`}
-                    alt="VietQR Demo"
+                    src={`https://img.vietqr.io/image/tcb-${APP_CONFIG.bankAccount.accountNumber}-compact.png?amount=${course.salePrice}&addInfo=${mockOrderCode}&accountName=${encodeURIComponent(APP_CONFIG.bankAccount.accountName)}`}
+                    alt="VietQR Standard"
                     className="w-full h-full object-contain"
                   />
                 </div>
