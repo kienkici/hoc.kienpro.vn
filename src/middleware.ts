@@ -6,6 +6,55 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // 1. Chuyển hướng tự động từ /learn/[courseSlug] sang /learn/[courseSlug]/[lessonSlug]
+  const learnMatch = pathname.match(/^\/learn\/([^/]+)$/);
+  if (learnMatch) {
+    const courseSlug = learnMatch[1];
+    if (courseSlug !== "success" && courseSlug !== "failed" && user) {
+      try {
+        const { data: courseData } = await supabase
+          .from("courses")
+          .select("id")
+          .eq("slug", courseSlug)
+          .maybeSingle();
+
+        if (courseData) {
+          const { data: modulesData } = await supabase
+            .from("course_modules")
+            .select(`
+              id,
+              order_index,
+              lessons (
+                slug,
+                order_index
+              )
+            `)
+            .eq("course_id", courseData.id)
+            .order("order_index", { ascending: true });
+
+          if (modulesData && modulesData.length > 0) {
+            let firstLessonSlug = "";
+            for (const mod of modulesData) {
+              if (mod.lessons && mod.lessons.length > 0) {
+                const sortedLessons = [...mod.lessons].sort((a: any, b: any) => a.order_index - b.order_index);
+                firstLessonSlug = sortedLessons[0].slug;
+                break;
+              }
+            }
+
+            if (firstLessonSlug) {
+              const url = request.nextUrl.clone();
+              url.pathname = `/learn/${courseSlug}/${firstLessonSlug}`;
+              return NextResponse.redirect(url);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Middleware redirect error:", err);
+      }
+    }
+  }
+
   // Protected paths
   const isProtectedPath =
     pathname.startsWith("/admin") ||
