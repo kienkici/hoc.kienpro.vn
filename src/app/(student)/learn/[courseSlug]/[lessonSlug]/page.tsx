@@ -223,7 +223,8 @@ export default function LessonLearnPage({ params }: Props) {
       let isEnded = false;
       try {
         if (typeof e.data === "string") {
-          if (e.data.includes("ended") || e.data.includes("complete")) {
+          // Chỉ kích hoạt khi nhận tin nhắn kết thúc (ended), không check từ 'complete' để tránh dính 'setup-complete' lúc load player
+          if (e.data.includes(":ended") || e.data === "ended") {
             isEnded = true;
           } else {
             const parsed = JSON.parse(e.data);
