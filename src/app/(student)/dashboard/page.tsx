@@ -138,7 +138,7 @@ export default function StudentDashboardPage() {
 
                     <div className="pt-2">
                       <Button variant="gold" className="w-full text-xs font-bold" asChild>
-                        <Link href={`/courses/${course.slug}`}>
+                        <Link href={`/learn/${course.slug}`}>
                           <PlayCircle className="w-4 h-4 mr-1.5" /> Vào Học Ngay
                         </Link>
                       </Button>
