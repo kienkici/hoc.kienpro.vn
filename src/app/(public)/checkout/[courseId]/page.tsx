@@ -18,12 +18,35 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
   const [step, setStep] = useState<"form" | "qr">("form");
   const [orderCode, setOrderCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes = 900 seconds
 
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
   });
+
+  useEffect(() => {
+    if (step !== "qr") return;
+
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [step]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     async function loadCourse() {
@@ -168,13 +191,13 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
                 <div className="w-56 h-56 mx-auto bg-white p-3 rounded-xl shadow-2xl flex items-center justify-center">
                   {/* VietQR Image */}
                   <img
-                    src={`https://img.vietqr.io/image/tcb-${APP_CONFIG.bankAccount.accountNumber}-compact.png?amount=${course.salePrice}&addInfo=${orderCode}&accountName=${encodeURIComponent(APP_CONFIG.bankAccount.accountName)}`}
+                    src={`https://img.vietqr.io/image/${APP_CONFIG.bankAccount.bankId}-${APP_CONFIG.bankAccount.accountNumber}-compact.png?amount=${course.salePrice}&addInfo=${orderCode}&accountName=${encodeURIComponent(APP_CONFIG.bankAccount.accountName)}`}
                     alt="VietQR Standard"
                     className="w-full h-full object-contain"
                   />
                 </div>
                 <div className="text-xs text-zinc-400 flex items-center justify-center gap-1.5">
-                  <Clock className="w-4 h-4 text-gold-400" /> Thời gian chờ: <strong className="text-white">14:59</strong>
+                  <Clock className="w-4 h-4 text-gold-400" /> Thời gian chờ: <strong className="text-white">{formatTime(timeLeft)}</strong>
                 </div>
               </div>
 

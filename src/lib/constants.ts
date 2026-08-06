@@ -5,8 +5,9 @@ export const APP_CONFIG = {
   supportEmail: "info@kienpro.vn",
   supportPhone: "0961831111",
   bankAccount: {
-    bankName: "Techcombank",
-    accountNumber: "2856868686",
+    bankName: "MBBank",
+    bankId: "mb",
+    accountNumber: "199686899999",
     accountName: "PHAM TRUNG KIEN",
   },
 };
