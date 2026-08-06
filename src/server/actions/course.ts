@@ -384,6 +384,8 @@ export async function getCourseWithCurriculum(courseId: string) {
       )
     `)
     .eq("id", courseId)
+    .order("order_index", { foreignTable: "course_modules", ascending: true })
+    .order("order_index", { foreignTable: "course_modules.lessons", ascending: true })
     .single();
 
   return course;

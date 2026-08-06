@@ -41,6 +41,7 @@ export default function CourseCurriculumPage({ params }: { params: { courseId: s
         status: l.status,
         isFreePreview: l.is_preview,
         isRequired: l.is_required,
+        orderIndex: l.order_index,
         video: l.video_id ? { provider: l.video_provider, externalId: l.video_id, status: l.video_status } : null,
       })).sort((a: any, b: any) => (a.orderIndex || 0) - (b.orderIndex || 0)),
     })).sort((a: any, b: any) => a.orderIndex - b.orderIndex);
