@@ -56,27 +56,56 @@ export default function AdminMediaPage() {
     fetchMedia();
   }, []);
 
-  const handleSimulateUpload = async () => {
-    const supabase = createClient();
-    const type = activeTab === "image" ? "image" : activeTab === "document" ? "document" : "video";
+  const handleRealUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const { error } = await supabase.from("media_assets").insert({
-      asset_type: type,
-      title: `Tài nguyên Tải Lên ${assets.length + 1}`,
-      file_name: `tuyen-dung-${Date.now()}.mp4`,
-      file_size: 45000000,
-      mime_type: type === "video" ? "video/mp4" : type === "image" ? "image/jpeg" : "application/pdf",
-      storage_path: "#",
-      thumbnail_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400",
-      status: "ready",
-      provider: "supabase",
-    });
+    setIsLoading(true);
+    try {
+      const supabase = createClient();
+      
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("media")
+        .upload(fileName, file);
 
-    if (error) {
-      toast.error(error.message);
-    } else {
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("media")
+        .getPublicUrl(fileName);
+
+      let type = "document";
+      if (file.type.startsWith("image/")) {
+        type = "image";
+      } else if (file.type.startsWith("video/")) {
+        type = "video";
+      }
+
+      const { error: dbError } = await supabase.from("media_assets").insert({
+        asset_type: type,
+        title: file.name,
+        file_name: file.name,
+        file_size: file.size,
+        mime_type: file.type,
+        storage_path: publicUrl,
+        thumbnail_url: type === "image" ? publicUrl : "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400",
+        status: "ready",
+        provider: "supabase",
+      });
+
+      if (dbError) throw dbError;
+
       toast.success("Tải tài nguyên lên thành công!");
       fetchMedia();
+    } catch (err: any) {
+      console.error("Lỗi khi tải file:", err);
+      toast.error("Lỗi tải lên: " + err.message);
+    } finally {
+      setIsLoading(false);
+      e.target.value = "";
     }
   };
 
@@ -111,9 +140,23 @@ export default function AdminMediaPage() {
         title="Thư Viện Media"
         description="Quản lý tập trung các Video, Tài liệu PDF/ZIP và Hình ảnh trong toàn bộ khóa học."
       >
-        <Button variant="gold" size="sm" onClick={handleSimulateUpload} className="font-bold">
-          <Upload className="w-4 h-4 mr-1.5" /> Upload Media Mới
-        </Button>
+        <div className="flex items-center gap-2">
+          <input 
+            type="file" 
+            id="media-file-input" 
+            className="hidden" 
+            accept="image/*,video/*,application/pdf"
+            onChange={handleRealUpload}
+          />
+          <Button 
+            variant="gold" 
+            size="sm" 
+            onClick={() => document.getElementById("media-file-input")?.click()} 
+            className="font-bold"
+          >
+            <Upload className="w-4 h-4 mr-1.5" /> Upload Media Mới
+          </Button>
+        </div>
       </PageHeader>
 
       {/* FILTER & TOOLBAR */}
