@@ -79,6 +79,30 @@ export default function AdminStudentsPage() {
 
   useEffect(() => {
     fetchStudents();
+
+    // Realtime: tự động cập nhật khi có profile học viên mới
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-students-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        () => {
+          fetchStudents();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "enrollments" },
+        () => {
+          fetchStudents();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleToggleActivation = async (studentId: string, currentStatus: boolean) => {
@@ -133,6 +157,22 @@ export default function AdminStudentsPage() {
             placeholder="Tìm theo tên, email, SĐT hoặc khóa học..."
             className="pl-9 bg-zinc-950 border-zinc-800 text-xs"
           />
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Đang lắng nghe realtime
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-[10px] h-7 px-3 border-zinc-700 hover:bg-zinc-800"
+            onClick={fetchStudents}
+            disabled={isLoading}
+          >
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+            {isLoading ? "Đang tải..." : "Làm mới"}
+          </Button>
         </div>
       </div>
 
