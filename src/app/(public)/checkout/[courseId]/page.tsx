@@ -96,6 +96,47 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
     loadCourse();
   }, [params.courseId]);
 
+  // 3. Tự động điền form và tạo đơn hàng nếu truyền tham số qua URL quảng cáo
+  useEffect(() => {
+    if (loading || !course) return;
+
+    const paramsObj = new URLSearchParams(window.location.search);
+    const nameParam = paramsObj.get("name") || "";
+    const emailParam = paramsObj.get("email") || "";
+    const phoneParam = paramsObj.get("phone") || "";
+
+    if (nameParam && emailParam && phoneParam) {
+      setForm({
+        name: nameParam,
+        email: emailParam,
+        phone: phoneParam,
+      });
+
+      const autoSubmit = async () => {
+        setIsSubmitting(true);
+        try {
+          const res = await createOrder({
+            courseId: course.id,
+            customerName: nameParam,
+            customerEmail: emailParam,
+            customerPhone: phoneParam,
+            amount: course.salePrice,
+          });
+
+          if (res.success && res.order) {
+            setOrderCode(res.order.code);
+            setStep("qr");
+          }
+        } catch (err) {
+          console.error("Auto submit failed:", err);
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+      autoSubmit();
+    }
+  }, [loading, course]);
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!course) return;
