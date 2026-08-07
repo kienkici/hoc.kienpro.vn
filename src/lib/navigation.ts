@@ -20,7 +20,6 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: "Thư viện Media", href: "/admin/media", icon: "FileVideo" },
   { title: "Quản lý Học viên", href: "/admin/students", icon: "Users" },
   { title: "Quản lý Đơn hàng", href: "/admin/orders", icon: "ShoppingCart" },
-  { title: "Lịch sử Thanh toán", href: "/admin/payments", icon: "CreditCard" },
   { title: "Cấu hình Hệ thống", href: "/admin/settings", icon: "Settings" },
 ];
 
