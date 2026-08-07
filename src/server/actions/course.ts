@@ -522,3 +522,139 @@ export async function checkOrderStatus(orderCode: string) {
     return { success: false, error: err.message };
   }
 }
+
+export async function manuallyActivateOrder(orderId: string) {
+  try {
+    const supabaseAdmin = createAdminClient();
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select(`
+        *,
+        courses (
+          title
+        )
+      `)
+      .eq("id", orderId)
+      .single();
+
+    if (orderError || !order) throw new Error("Không tìm thấy đơn hàng");
+    if (order.status === "paid") {
+      return { success: true, message: "Đơn hàng đã được thanh toán trước đó" };
+    }
+
+    // 1. Cập nhật đơn hàng thành paid
+    const { error: updateError } = await supabaseAdmin
+      .from("orders")
+      .update({ status: "paid", updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+
+    if (updateError) throw updateError;
+
+    // 2. Tạo hoặc tìm tài khoản Auth của học viên
+    const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
+    let user = userData?.users.find((u) => u.email === order.customer_email);
+    let userId = user?.id;
+
+    if (!user) {
+      const tempPassword = crypto.randomBytes(12).toString("hex");
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: order.customer_email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: order.customer_name,
+          phone: order.customer_phone,
+        },
+      });
+
+      if (createError) throw createError;
+      userId = newUser.user.id;
+    }
+
+    // 3. Đảm bảo profile và role của học viên được tạo/cập nhật đầy đủ
+    await supabaseAdmin.from("profiles").upsert({
+      id: userId,
+      full_name: order.customer_name,
+      phone: order.customer_phone,
+      is_activated: false,
+      updated_at: new Date().toISOString(),
+    });
+
+    await supabaseAdmin.from("user_roles").upsert({
+      user_id: userId,
+      role: "student",
+    });
+
+    // 4. Cấp quyền khóa học (Enrollment) cho học viên
+    await supabaseAdmin.from("enrollments").upsert({
+      user_id: userId,
+      course_id: order.course_id,
+      status: "ACTIVE",
+    });
+
+    // 5. Tạo token kích hoạt tài khoản
+    const activationToken = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await supabaseAdmin.from("activation_tokens").insert({
+      user_id: userId,
+      token: activationToken,
+      expires_at: expiresAt.toISOString(),
+    });
+
+    // 6. Gửi Email kích hoạt tự động qua Resend
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://hoc.kienpro.vn";
+    const activationLink = `${appUrl}/activate-account?token=${activationToken}`;
+    const courseTitle = order.courses?.title || "Khóa học bạn đã đăng ký";
+
+    const emailHtml = `
+      <div style="background-color: #09090b; color: #ffffff; padding: 40px; font-family: Arial, sans-serif; border: 1px solid #d4af37; border-radius: 12px; max-width: 600px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h2 style="color: #d4af37; margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 1px;">KIENPRO LMS</h2>
+          <p style="color: #a1a1aa; font-size: 12px; margin-top: 5px;">HỌC TẬP THỰC CHIẾN - TỰ ĐỘNG HÓA SỰ NGHIỆP</p>
+        </div>
+        
+        <h3 style="color: #ffffff; border-bottom: 1px solid #27272a; padding-bottom: 10px;">Xin chào ${order.customer_name},</h3>
+        <p style="line-height: 1.6; color: #e4e4e7;">Cảm ơn anh/chị đã đăng ký học tập tại KIENPRO LMS. Đơn hàng kích hoạt thủ công mã <strong>${order.code}</strong> đã được xác nhận thành công!</p>
+        
+        <div style="background-color: #18181b; border-left: 4px solid #d4af37; padding: 15px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0 0 8px 0; color: #a1a1aa; font-size: 13px;">Khóa học kích hoạt:</p>
+          <strong style="color: #ffffff; font-size: 15px;">${courseTitle}</strong>
+        </div>
+
+        <p style="line-height: 1.6; color: #e4e4e7;">Anh/Chị vui lòng click vào nút bên dưới để thiết lập mật khẩu cá nhân và bắt đầu vào học ngay:</p>
+        
+        <div style="text-align: center; margin: 35px 0;">
+          <a href="${activationLink}" style="background-color: #d4af37; color: #000000; padding: 12px 30px; text-decoration: none; font-weight: bold; border-radius: 6px; font-size: 14px; display: inline-block; letter-spacing: 0.5px;">KÍCH HOẠT TÀI KHOẢN HỌC</a>
+        </div>
+
+        <p style="font-size: 11px; color: #71717a; line-height: 1.5;">Nếu nút trên không hoạt động, anh/chị có thể sao chép liên kết này dán vào trình duyệt:<br/>
+        <a href="${activationLink}" style="color: #d4af37; text-decoration: underline;">${activationLink}</a></p>
+      </div>
+    `;
+
+    if (process.env.RESEND_API_KEY) {
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "KIENPRO LMS <info@kienpro.vn>",
+          to: order.customer_email,
+          subject: `[KIENPRO LMS] Kích hoạt khóa học thành công - Đơn hàng ${order.code}`,
+          html: emailHtml,
+        }),
+      });
+    }
+
+    revalidatePath("/admin/orders");
+    return { success: true, message: "Kích hoạt đơn hàng và gửi email thành công!" };
+  } catch (err: any) {
+    console.error("Lỗi kích hoạt thủ công:", err);
+    return { success: false, error: err.message };
+  }
+}

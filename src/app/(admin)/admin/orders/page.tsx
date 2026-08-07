@@ -8,6 +8,8 @@ import { Search, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { manuallyActivateOrder } from "@/server/actions/course";
 
 export default function AdminOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,6 +17,26 @@ export default function AdminOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [activatingOrderId, setActivatingOrderId] = useState<string | null>(null);
+
+  const handleManualActivate = async (orderId: string) => {
+    if (activatingOrderId) return;
+    setActivatingOrderId(orderId);
+    try {
+      const res = await manuallyActivateOrder(orderId);
+      if (res.success) {
+        toast.success(res.message || "Kích hoạt đơn hàng thành công!");
+        await fetchOrders();
+      } else {
+        toast.error(res.error || "Kích hoạt thất bại. Vui lòng thử lại.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Đã xảy ra lỗi: " + err.message);
+    } finally {
+      setActivatingOrderId(null);
+    }
+  };
 
   const getDateRange = (range: string) => {
     const now = new Date();
@@ -183,12 +205,13 @@ export default function AdminOrdersPage() {
                 <th className="p-3">Số Tiền</th>
                 <th className="p-3">Trạng Thái</th>
                 <th className="p-3">Thời Gian Tạo</th>
+                <th className="p-3 text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-4 text-center text-zinc-500">
+                  <td colSpan={10} className="p-4 text-center text-zinc-500">
                     Không tìm thấy đơn hàng nào.
                   </td>
                 </tr>
@@ -222,6 +245,23 @@ export default function AdminOrdersPage() {
                     <td className="p-3 text-zinc-400">
                       {new Date(order.created_at).toLocaleString("vi-VN")}
                     </td>
+                    <td className="p-3 text-right">
+                      {order.status === "pending" && (
+                        <Button
+                          variant="gold"
+                          size="sm"
+                          className="text-[10px] h-7 px-2 font-bold"
+                          onClick={() => handleManualActivate(order.id)}
+                          disabled={activatingOrderId === order.id}
+                        >
+                          {activatingOrderId === order.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            "Kích hoạt"
+                          )}
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -240,7 +280,7 @@ export default function AdminOrdersPage() {
                   <td className="p-3 text-gold-400 text-sm">
                     {formatCurrency(filtered.reduce((sum, o) => sum + Number(o.amount), 0))}
                   </td>
-                  <td className="p-3" colSpan={2}></td>
+                  <td className="p-3" colSpan={3}></td>
                 </tr>
               </tfoot>
             )}
