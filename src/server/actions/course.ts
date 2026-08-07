@@ -552,11 +552,18 @@ export async function manuallyActivateOrder(orderId: string) {
     if (updateError) throw updateError;
 
     // 2. Tạo hoặc tìm tài khoản Auth của học viên
-    const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
-    let user = userData?.users.find((u) => u.email === order.customer_email);
-    let userId = user?.id;
+    let userId: string | undefined;
+    const { data: userData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 1000
+    });
 
-    if (!user) {
+    if (listError) throw listError;
+
+    const existingUser = userData?.users.find((u) => u.email === order.customer_email);
+
+    if (existingUser) {
+      userId = existingUser.id;
+    } else {
       const tempPassword = crypto.randomBytes(12).toString("hex");
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: order.customer_email,

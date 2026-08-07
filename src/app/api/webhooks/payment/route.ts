@@ -141,11 +141,21 @@ export async function POST(request: Request) {
       .eq("id", order.id);
 
     // 7. Tạo/Tìm tài khoản Auth của học viên
-    const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
-    let user = userData?.users.find((u) => u.email === order.customer_email);
-    let userId = user?.id;
+    let userId: string | undefined;
+    const { data: userData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 1000
+    });
 
-    if (!user) {
+    if (listError) {
+      console.error("Error listing auth users:", listError);
+      throw listError;
+    }
+
+    const existingUser = userData?.users.find((u) => u.email === order.customer_email);
+
+    if (existingUser) {
+      userId = existingUser.id;
+    } else {
       // Tạo tài khoản mới tạm thời với mật khẩu ngẫu nhiên
       const tempPassword = crypto.randomBytes(12).toString("hex");
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
