@@ -37,18 +37,10 @@ export default function AdminStudentsPage() {
         .from("enrollments")
         .select("user_id, course_id, courses(title)");
 
-      // 3. Tải danh sách đơn hàng để đối khớp email qua số điện thoại
-      const { data: ordersData } = await supabase
-        .from("orders")
-        .select("customer_phone, customer_email");
-
-      // 4. Ánh xạ dữ liệu để hiển thị tối ưu cho việc chăm sóc học viên
+      // 3. Ánh xạ dữ liệu hiển thị
       const merged = (profilesData || []).map((profile) => {
-        // Ánh xạ email
-        const matchedOrder = (ordersData || []).find(
-          (o) => o.customer_phone === profile.phone
-        );
-        const email = matchedOrder ? matchedOrder.customer_email : null;
+        // Sử dụng email lưu trực tiếp trong profile (chuẩn)
+        const email = profile.email || null;
 
         // Ánh xạ danh sách khóa học sở hữu
         const enrolled = (enrollmentsData || [])

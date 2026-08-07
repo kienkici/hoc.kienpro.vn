@@ -596,6 +596,7 @@ export async function manuallyActivateOrder(orderId: string) {
       id: userId,
       full_name: order.customer_name,
       phone: order.customer_phone,
+      email: order.customer_email,
       is_activated: false,
       updated_at: new Date().toISOString(),
     });
