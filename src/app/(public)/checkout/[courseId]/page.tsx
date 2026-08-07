@@ -104,6 +104,11 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
     const nameParam = paramsObj.get("name") || "";
     const emailParam = paramsObj.get("email") || "";
     const phoneParam = paramsObj.get("phone") || "";
+    
+    // Đọc thêm UTM parameters từ link quảng cáo
+    const utmSource = paramsObj.get("utm_source") || "";
+    const utmMedium = paramsObj.get("utm_medium") || "";
+    const utmCampaign = paramsObj.get("utm_campaign") || "";
 
     if (nameParam && emailParam && phoneParam) {
       setForm({
@@ -121,6 +126,9 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
             customerEmail: emailParam,
             customerPhone: phoneParam,
             amount: course.salePrice,
+            utmSource: utmSource || undefined,
+            utmMedium: utmMedium || undefined,
+            utmCampaign: utmCampaign || undefined,
           });
 
           if (res.success && res.order) {
@@ -143,12 +151,20 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
 
     setIsSubmitting(true);
     try {
+      const paramsObj = new URLSearchParams(window.location.search);
+      const utmSource = paramsObj.get("utm_source") || "";
+      const utmMedium = paramsObj.get("utm_medium") || "";
+      const utmCampaign = paramsObj.get("utm_campaign") || "";
+
       const res = await createOrder({
         courseId: course.id,
         customerName: form.name,
         customerEmail: form.email,
         customerPhone: form.phone,
         amount: course.salePrice,
+        utmSource: utmSource || undefined,
+        utmMedium: utmMedium || undefined,
+        utmCampaign: utmCampaign || undefined,
       });
 
       if (res.success && res.order) {

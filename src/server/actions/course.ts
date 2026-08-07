@@ -474,6 +474,9 @@ export async function createOrder(data: {
   customerEmail: string;
   customerPhone: string;
   amount: number;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
 }) {
   try {
     const supabase = createClient();
@@ -489,6 +492,9 @@ export async function createOrder(data: {
         customer_phone: data.customerPhone,
         amount: data.amount,
         status: "pending",
+        utm_source: data.utmSource || null,
+        utm_medium: data.utmMedium || null,
+        utm_campaign: data.utmCampaign || null,
       })
       .select()
       .single();
