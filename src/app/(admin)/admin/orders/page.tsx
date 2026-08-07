@@ -101,6 +101,14 @@ export default function AdminOrdersPage() {
       (o.courses?.title || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalCount = filtered.length;
+  const totalAmountPaid = filtered
+    .filter((o) => o.status === "paid")
+    .reduce((sum, o) => sum + Number(o.amount), 0);
+  const totalAmountPending = filtered
+    .filter((o) => o.status === "pending")
+    .reduce((sum, o) => sum + Number(o.amount), 0);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -198,6 +206,24 @@ export default function AdminOrdersPage() {
                 ))
               )}
             </tbody>
+            {filtered.length > 0 && (
+              <tfoot className="bg-zinc-950 font-bold border-t-2 border-zinc-800 text-white">
+                <tr>
+                  <td className="p-3 text-zinc-400 uppercase tracking-wider" colSpan={4}>
+                    Tổng số đơn: <span className="text-white font-mono">{totalCount}</span>
+                  </td>
+                  <td className="p-3 text-zinc-400" colSpan={2}>
+                    Đã thanh toán (PAID): <span className="text-emerald-400">{formatCurrency(totalAmountPaid)}</span>
+                    <br />
+                    Chờ thanh toán: <span className="text-amber-400">{formatCurrency(totalAmountPending)}</span>
+                  </td>
+                  <td className="p-3 text-gold-400 text-sm">
+                    {formatCurrency(filtered.reduce((sum, o) => sum + Number(o.amount), 0))}
+                  </td>
+                  <td className="p-3" colSpan={2}></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}
