@@ -71,7 +71,11 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
   useEffect(() => {
     async function loadCourse() {
       try {
-        const data = await getCourseByIdOrSlug(params.courseId);
+        let data = await getCourseByIdOrSlug(params.courseId);
+        if (!data) {
+          data = await getCourseByIdOrSlug("11111111-1111-1111-1111-111111111111");
+        }
+
         if (data) {
           setCourse({
             id: data.id,
@@ -83,10 +87,9 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
             instructorName: "Kiên Pro",
           });
         } else {
-          // Fallback to first mock course if slug/id not found in DB
           setCourse({
             ...MOCK_COURSES[0],
-            id: "11111111-1111-1111-1111-111111111111", // Gán ID UUID thật của khóa học AI Landing Page để tránh lỗi cú pháp DB
+            id: "11111111-1111-1111-1111-111111111111",
           });
         }
       } catch (err) {
