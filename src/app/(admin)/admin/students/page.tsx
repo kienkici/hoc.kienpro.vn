@@ -216,7 +216,7 @@ export default function AdminStudentsPage() {
                           className="text-[10px] h-7 px-2 border-zinc-700 hover:bg-zinc-800"
                           onClick={() => handleResendEmail(s.email)}
                         >
-                          <RefreshCw className="w-2.5 h-2.5 mr-1" /> Hướng Dẫn
+                          <RefreshCw className="w-2.5 h-2.5 mr-1" /> Gửi Lại Email
                         </Button>
                       )}
                       
