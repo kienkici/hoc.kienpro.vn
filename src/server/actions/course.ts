@@ -512,12 +512,17 @@ export async function checkOrderStatus(orderCode: string) {
     const supabase = createClient();
     const { data: order, error } = await supabase
       .from("orders")
-      .select("status")
+      .select("status, customer_email, activation_token")
       .eq("code", orderCode)
       .maybeSingle();
 
     if (error) throw error;
-    return { success: true, status: order?.status || "pending" };
+    return { 
+      success: true, 
+      status: order?.status || "pending",
+      email: order?.customer_email || null,
+      token: order?.activation_token || null
+    };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -543,10 +548,17 @@ export async function manuallyActivateOrder(orderId: string) {
       return { success: true, message: "Đơn hàng đã được thanh toán trước đó" };
     }
 
-    // 1. Cập nhật đơn hàng thành paid
+    // 1. Tạo token kích hoạt tài khoản trước để lưu vào đơn hàng
+    const activationToken = crypto.randomBytes(32).toString("hex");
+
+    // 2. Cập nhật đơn hàng thành paid và lưu activation_token
     const { error: updateError } = await supabaseAdmin
       .from("orders")
-      .update({ status: "paid", updated_at: new Date().toISOString() })
+      .update({ 
+        status: "paid", 
+        activation_token: activationToken,
+        updated_at: new Date().toISOString() 
+      })
       .eq("id", orderId);
 
     if (updateError) throw updateError;
@@ -600,8 +612,7 @@ export async function manuallyActivateOrder(orderId: string) {
       status: "ACTIVE",
     });
 
-    // 5. Tạo token kích hoạt tài khoản
-    const activationToken = crypto.randomBytes(32).toString("hex");
+    // 5. Lưu token kích hoạt tài khoản
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 

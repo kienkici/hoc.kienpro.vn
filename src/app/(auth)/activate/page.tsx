@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { CheckCircle, ShieldCheck, ArrowRight } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ShieldCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ActivatePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "học viên";
+  const token = searchParams.get("token") || "";
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-8 space-y-6 text-center shadow-2xl">
@@ -17,7 +20,7 @@ export default function ActivatePage() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-white">Xác Thực Liên Kết Kích Hoạt</h1>
         <p className="text-xs text-zinc-300 leading-relaxed">
-          Email: <strong className="text-white">hocvien.kienpro@gmail.com</strong>.
+          Email: <strong className="text-white">{email}</strong>.
           <br />
           Token kích hoạt an toàn hợp lệ (Thời hạn 72 giờ).
         </p>
@@ -30,7 +33,7 @@ export default function ActivatePage() {
       <Button
         variant="gold"
         size="lg"
-        onClick={() => router.push("/set-password")}
+        onClick={() => router.push(`/activate-account?token=${token}`)}
         className="w-full font-bold"
       >
         Đặt Mật Khẩu Lần Đầu <ArrowRight className="w-4 h-4 ml-2" />

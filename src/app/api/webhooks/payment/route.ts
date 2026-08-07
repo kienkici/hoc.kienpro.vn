@@ -134,10 +134,17 @@ export async function POST(request: Request) {
       payload: body,
     });
 
-    // 6. Cập nhật trạng thái đơn hàng thành 'paid'
+    // 6. Tạo token kích hoạt tài khoản trước để lưu vào đơn hàng
+    const activationToken = crypto.randomBytes(32).toString("hex");
+
+    // Cập nhật trạng thái đơn hàng thành 'paid' và lưu activation_token
     await supabaseAdmin
       .from("orders")
-      .update({ status: "paid", updated_at: new Date().toISOString() })
+      .update({ 
+        status: "paid", 
+        activation_token: activationToken,
+        updated_at: new Date().toISOString() 
+      })
       .eq("id", order.id);
 
     // 7. Tạo/Tìm tài khoản Auth của học viên
@@ -196,8 +203,7 @@ export async function POST(request: Request) {
       status: "ACTIVE",
     });
 
-    // 10. Tạo token kích hoạt tài khoản
-    const activationToken = crypto.randomBytes(32).toString("hex");
+    // 10. Lưu token kích hoạt tài khoản
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Hết hạn trong 7 ngày
 

@@ -52,7 +52,7 @@ export default function CheckoutPage({ params }: { params: { courseId: string } 
         const res = await checkOrderStatus(orderCode);
         if (res.success && res.status === "paid") {
           clearInterval(interval);
-          router.push("/checkout/success");
+          router.push(`/checkout/success?email=${encodeURIComponent(form.email)}&code=${orderCode}&token=${res.token || ""}`);
         }
       } catch (err) {
         console.error("Error checking order status:", err);
