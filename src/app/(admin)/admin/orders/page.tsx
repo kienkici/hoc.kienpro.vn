@@ -14,6 +14,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const getDateRange = (range: string) => {
     const now = new Date();
@@ -91,15 +92,19 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, [timeRange]);
 
-  const filtered = orders.filter(
-    (o) =>
+  const filtered = orders.filter((o) => {
+    const matchesSearch = 
       o.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customer_phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.utm_source || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (o.courses?.title || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      (o.courses?.title || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === "all" || o.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   const totalCount = filtered.length;
   const totalAmountPaid = filtered
@@ -133,8 +138,8 @@ export default function AdminOrdersPage() {
         </div>
       </PageHeader>
 
-      <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 flex items-center justify-between">
-        <div className="relative w-80">
+      <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <Input
             value={searchTerm}
@@ -142,6 +147,21 @@ export default function AdminOrdersPage() {
             placeholder="Tìm theo Mã đơn, email, SĐT, nguồn..."
             className="pl-9 bg-zinc-950 border-zinc-800 text-xs"
           />
+        </div>
+
+        {/* Status Filter Dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs text-zinc-400 font-medium">Trạng thái:</span>
+          <select 
+            value={statusFilter} 
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gold-500 font-semibold cursor-pointer"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="paid">Đã thanh toán (PAID)</option>
+            <option value="pending">Chờ thanh toán (PENDING)</option>
+            <option value="failed">Lỗi / Hủy (FAILED)</option>
+          </select>
         </div>
       </div>
 
