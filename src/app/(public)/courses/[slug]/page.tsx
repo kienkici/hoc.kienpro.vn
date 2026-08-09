@@ -1,4 +1,3 @@
-import Link from "next/image"; // Note: we should import Image from "next/image" instead of Link!
 import NextLink from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
