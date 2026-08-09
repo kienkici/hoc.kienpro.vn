@@ -209,8 +209,8 @@ export function TrainingScheduleClient() {
             </div>
           </div>
           <Button variant="outline" asChild className="text-xs text-zinc-300 border-zinc-800 hover:text-white shrink-0">
-            <a href="https://zalo.me/g/kienkici" target="_blank" rel="noopener noreferrer">
-              Tham Gia Nhóm Zalo
+            <a href="https://zalo.me/0961831111" target="_blank" rel="noopener noreferrer">
+              Liên hệ
             </a>
           </Button>
         </div>
