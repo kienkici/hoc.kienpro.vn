@@ -49,17 +49,21 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
       "Bảo mật HLS mã hóa video chống tải xuống",
       "Bộ Template thiết kế Gold Premium làm sẵn",
     ],
-    modules: (courseData.course_modules || []).map((m: any) => ({
-      id: m.id,
-      title: m.title,
-      lessons: (m.lessons || []).map((l: any) => ({
-        id: l.id,
-        title: l.title,
-        slug: l.slug,
-        isFreePreview: l.is_preview,
-        durationSeconds: l.duration_seconds || 0,
-      })).sort((a: any, b: any) => a.order_index - b.order_index),
-    })).sort((a: any, b: any) => a.order_index - b.order_index),
+    modules: (courseData.course_modules || [])
+      .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+      .map((m: any) => ({
+        id: m.id,
+        title: m.title,
+        lessons: (m.lessons || [])
+          .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+          .map((l: any) => ({
+            id: l.id,
+            title: l.title,
+            slug: l.slug,
+            isFreePreview: l.is_preview,
+            durationSeconds: l.duration_seconds || 0,
+          })),
+      })),
   };
 
   const discountPercent = course.price > 0 ? Math.round(
