@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 interface Session {
   time: string;
   date: string;
+  label?: string;
 }
 
 interface ScheduleItem {
@@ -36,9 +37,9 @@ const SCHEDULE_DATA = {
       detailUrl: "https://kienpro.vn/facebookads-coban/",
       location: "Học online qua zoom",
       sessions: [
-        { time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 20, 21/08/2026" },
-        { time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 27, 28/08/2026" },
-        { time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 29, 30/08/2026" }
+        { label: "K5", time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 20, 21/08/2026" },
+        { label: "K5", time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 27, 28/08/2026" },
+        { label: "K6", time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 29, 30/08/2026" }
       ]
     }
   ] as ScheduleItem[],
@@ -59,9 +60,9 @@ const SCHEDULE_DATA = {
       detailUrl: "https://kienpro.vn/facebookads-coban/",
       location: "Học online qua zoom",
       sessions: [
-        { time: "20:00 - 22:00", date: "Thứ 1, 6. Ngày 15, 16/09/2026" },
-        { time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 22, 23/09/2026" },
-        { time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 17, 18/09/2026" }
+        { label: "K7", time: "20:00 - 22:00", date: "Thứ 1, 6. Ngày 15, 16/09/2026" },
+        { label: "K7", time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 22, 23/09/2026" },
+        { label: "K8", time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 17, 18/09/2026" }
       ]
     },
     {
@@ -166,7 +167,14 @@ export function TrainingScheduleClient() {
                       <div key={sIdx} className="flex items-start gap-3 text-sm">
                         <Calendar className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
                         <div className="space-y-0.5">
-                          <span className="font-medium text-zinc-200 block">{session.date}</span>
+                          <div className="flex items-center gap-2">
+                            {session.label && (
+                              <Badge variant="outline" className="text-[10px] text-gold-400 border-gold-500/30 px-1.5 py-0 h-4 shrink-0 font-extrabold flex items-center justify-center bg-gold-500/5">
+                                {session.label}
+                              </Badge>
+                            )}
+                            <span className="font-medium text-zinc-200 block">{session.date}</span>
+                          </div>
                           <span className="text-xs text-zinc-400 flex items-center gap-1">
                             <Clock className="w-3 h-3 text-gold-500/60" /> {session.time}
                           </span>
