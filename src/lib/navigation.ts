@@ -26,6 +26,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
 export const PUBLIC_NAV_ITEMS: NavItem[] = [
   { title: "Trang chủ", href: "/" },
   { title: "Khóa học", href: "/#courses" },
+  { title: "Lịch Đào Tạo", href: "/lich-dao-tao" },
   { title: "Về Kiên Pro", href: "/#about" },
   { title: "Hỏi đáp (FAQ)", href: "/#faq" },
 ];
