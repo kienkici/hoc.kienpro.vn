@@ -27,8 +27,8 @@ const SCHEDULE_DATA = {
       detailUrl: "https://kienpro.vn/webinar-fbads/",
       location: "Học online qua zoom",
       sessions: [
-        { time: "20:00 - 22:00", date: "Ngày 11, 12/08/2026" },
-        { time: "20:00 - 22:00", date: "Ngày 25, 26/08/2026" }
+        { time: "20:00 - 22:00", date: "Thứ 3,4. Ngày 11,12/08/2026" },
+        { time: "20:00 - 22:00", date: "Thứ 3,4. Ngày 25,26/08/2026" }
       ]
     },
     {
@@ -37,9 +37,9 @@ const SCHEDULE_DATA = {
       detailUrl: "https://kienpro.vn/facebookads-coban/",
       location: "Học online qua zoom",
       sessions: [
-        { label: "K5", time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 20, 21/08/2026" },
-        { label: "K5", time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 27, 28/08/2026" },
-        { label: "K6", time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 29, 30/08/2026" }
+        { label: "K5", time: "20:00 - 22:00", date: "Thứ 5,6. Ngày 20,21/08/2026" },
+        { label: "K5", time: "20:00 - 22:00", date: "Thứ 5,6. Ngày 27,28/08/2026" },
+        { label: "K6", time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 29,30/08/2026" }
       ]
     }
   ] as ScheduleItem[],
@@ -50,8 +50,8 @@ const SCHEDULE_DATA = {
       detailUrl: "https://kienpro.vn/webinar-fbads/",
       location: "Học online qua zoom",
       sessions: [
-        { time: "20:00 - 22:00", date: "Ngày 6, 7/09/2026" },
-        { time: "20:00 - 22:00", date: "Ngày 20, 21/09/2026" }
+        { time: "20:00 - 22:00", date: "Thứ 3,4. Ngày 6,7/09/2026" },
+        { time: "20:00 - 22:00", date: "Thứ 3,4. Ngày 20,21/09/2026" }
       ]
     },
     {
@@ -60,9 +60,9 @@ const SCHEDULE_DATA = {
       detailUrl: "https://kienpro.vn/facebookads-coban/",
       location: "Học online qua zoom",
       sessions: [
-        { label: "K7", time: "20:00 - 22:00", date: "Thứ 1, 6. Ngày 15, 16/09/2026" },
-        { label: "K7", time: "20:00 - 22:00", date: "Thứ 5, 6. Ngày 22, 23/09/2026" },
-        { label: "K8", time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 17, 18/09/2026" }
+        { label: "K7", time: "20:00 - 22:00", date: "Thứ 5,6. Ngày 15,16/09/2026" },
+        { label: "K7", time: "20:00 - 22:00", date: "Thứ 5,6. Ngày 22,23/09/2026" },
+        { label: "K8", time: "09:00 - 17:00", date: "Thứ 7, CN. Ngày 17,18/09/2026" }
       ]
     },
     {
