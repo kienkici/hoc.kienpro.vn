@@ -49,7 +49,7 @@ export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
       throw new Error("Bạn không có quyền truy cập video bài học này");
     }
 
-    const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID || "718961";
+    const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID || "771780";
     const tokenKey = process.env.BUNNY_TOKEN_AUTHENTICATION_KEY;
     
     let embedUrl = "";

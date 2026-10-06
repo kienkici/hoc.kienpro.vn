@@ -163,7 +163,7 @@ export default function LessonLearnPage({ params }: Props) {
           const tokenKey = process.env.NEXT_PUBLIC_BUNNY_TOKEN_AUTHENTICATION_KEY;
           if (!tokenKey || tokenKey === "59de0e0f-78e0-4cae-91a9-e68a6de6a5f9") {
             // Không bật Token Auth -> Tạo trực tiếp URL nhúng siêu nhanh ở Client (0ms)
-            const libraryId = "718961";
+            const libraryId = process.env.NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID || "771780";
             setEmbedUrl(`https://iframe.mediadelivery.net/embed/${libraryId}/${foundLesson.video_id}`);
             setVideoError("");
           } else {
