@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 export function createClient() {
@@ -33,7 +34,6 @@ export function createClient() {
 }
 
 export function createAdminClient() {
-  const cookieStore = cookies();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
@@ -41,24 +41,10 @@ export function createAdminClient() {
     throw new Error("Missing Supabase URL or Secret Key");
   }
 
-  return createServerClient(
-    url,
-    secretKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Safe to ignore in Server Components
-          }
-        },
-      },
-    }
-  );
+  return createSupabaseClient(url, secretKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }

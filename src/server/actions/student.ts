@@ -410,3 +410,189 @@ export async function provisionStudentsBatchAction(payload: unknown): Promise<Pr
     };
   }
 }
+
+/**
+ * Bật/tắt trạng thái kích hoạt của học viên
+ */
+export async function toggleStudentActivationAction(studentId: string, targetStatus: boolean) {
+  try {
+    const adminSupabase = createAdminClient();
+    const { error } = await adminSupabase
+      .from("profiles")
+      .update({ is_activated: targetStatus, updated_at: new Date().toISOString() })
+      .eq("id", studentId);
+
+    if (error) throw error;
+    revalidatePath("/admin/students");
+    return {
+      success: true,
+      message: targetStatus ? "Đã kích hoạt tài khoản thành công!" : "Đã hủy kích hoạt tài khoản!",
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Không thể cập nhật trạng thái." };
+  }
+}
+
+/**
+ * Gửi lại email kích hoạt cho học viên
+ */
+export async function resendStudentActivationEmailAction(studentId: string) {
+  try {
+    const adminSupabase = createAdminClient();
+
+    // 1. Lấy profile
+    const { data: profile, error: pError } = await adminSupabase
+      .from("profiles")
+      .select("id, email, full_name, is_activated")
+      .eq("id", studentId)
+      .single();
+
+    if (pError || !profile || !profile.email) {
+      return { success: false, error: "Không tìm thấy email của học viên." };
+    }
+
+    // 2. Lấy khóa học đang học để hiển thị trong email
+    const { data: enrollments } = await adminSupabase
+      .from("enrollments")
+      .select("course_id, courses(title)")
+      .eq("user_id", studentId)
+      .limit(1);
+
+    const firstCourse = enrollments?.[0]?.courses as any;
+    const courseTitle = Array.isArray(firstCourse)
+      ? firstCourse[0]?.title || "Khóa Học Kiên Pro"
+      : firstCourse?.title || "Khóa Học Kiên Pro";
+
+    // 3. Sinh token mới hạn 30 ngày
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    await adminSupabase.from("activation_tokens").insert({
+      user_id: studentId,
+      token,
+      expires_at: expiresAt.toISOString(),
+    });
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost")
+        ? process.env.NEXT_PUBLIC_APP_URL
+        : "https://hoc.kienpro.vn";
+
+    const activationLink = `${appUrl}/activate-account?token=${token}`;
+
+    if (process.env.RESEND_API_KEY) {
+      await sendActivationEmail({
+        to: profile.email,
+        fullName: profile.full_name || profile.email.split("@")[0],
+        courseTitle,
+        activationLink,
+      });
+    }
+
+    return {
+      success: true,
+      message: `Đã gửi lại email kích hoạt đến ${profile.email}!`,
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Lỗi gửi lại email." };
+  }
+}
+
+/**
+ * Thêm khóa học trực tiếp cho học viên
+ */
+export async function addCourseToStudentAction(studentId: string, courseId: string) {
+  try {
+    const adminSupabase = createAdminClient();
+
+    // Lấy thông tin khóa học
+    const { data: course, error: cErr } = await adminSupabase
+      .from("courses")
+      .select("id, title, slug")
+      .eq("id", courseId)
+      .single();
+
+    if (cErr || !course) {
+      return { success: false, error: "Khóa học không tồn tại." };
+    }
+
+    // Upsert enrollment
+    const { error: eErr } = await adminSupabase.from("enrollments").upsert({
+      user_id: studentId,
+      course_id: courseId,
+      status: "ACTIVE",
+    });
+
+    if (eErr) throw eErr;
+
+    // Gửi email thông báo nếu học viên có email
+    const { data: profile } = await adminSupabase
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", studentId)
+      .single();
+
+    if (profile?.email && process.env.RESEND_API_KEY) {
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost")
+          ? process.env.NEXT_PUBLIC_APP_URL
+          : "https://hoc.kienpro.vn";
+
+      await sendCourseAccessEmail({
+        to: profile.email,
+        fullName: profile.full_name || profile.email.split("@")[0],
+        courseTitle: course.title,
+        loginUrl: `${appUrl}/login`,
+        learnUrl: `${appUrl}/learn/${course.slug}`,
+      });
+    }
+
+    revalidatePath("/admin/students");
+    return {
+      success: true,
+      message: `Đã thêm khóa học "${course.title}" cho học viên thành công!`,
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Không thể thêm khóa học." };
+  }
+}
+
+/**
+ * Xóa học viên khỏi hệ thống (An toàn)
+ */
+export async function deleteStudentAction(studentId: string) {
+  try {
+    const adminSupabase = createAdminClient();
+
+    // Không cho phép tự xóa super_admin
+    const { data: roleData } = await adminSupabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", studentId)
+      .maybeSingle();
+
+    if (roleData?.role === "super_admin") {
+      return { success: false, error: "Không được phép xóa tài khoản Super Admin." };
+    }
+
+    // Xóa liên kết
+    await adminSupabase.from("enrollments").delete().eq("user_id", studentId);
+    await adminSupabase.from("activation_tokens").delete().eq("user_id", studentId);
+    await adminSupabase.from("user_roles").delete().eq("user_id", studentId);
+    await adminSupabase.from("profiles").delete().eq("id", studentId);
+
+    // Xóa auth user nếu tồn tại
+    try {
+      await adminSupabase.auth.admin.deleteUser(studentId);
+    } catch {
+      // Bỏ qua nếu user auth không tồn tại
+    }
+
+    revalidatePath("/admin/students");
+    return { success: true, message: "Đã xóa học viên khỏi hệ thống thành công!" };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Lỗi khi xóa học viên." };
+  }
+}
+

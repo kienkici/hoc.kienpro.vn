@@ -21,7 +21,9 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 
 // Danh sách email học viên cần cấp (Anh Kiên có thể thêm vào đây)
 const STUDENTS_LIST = [
-  // { email: "hocvien1@gmail.com", fullName: "Nguyễn Văn A" },
+  { email: "p.hoaithu@gmail.com", fullName: "p.hoaithu" },
+  { email: "vanthuan239@gmail.com", fullName: "vanthuan239" },
+  { email: "louisle.wedding@gmail.com", fullName: "louisle.wedding" },
 ];
 
 const FB_COURSE_ID = "c9f7e347-a8f6-487f-b1d1-347c5452b5f6";
