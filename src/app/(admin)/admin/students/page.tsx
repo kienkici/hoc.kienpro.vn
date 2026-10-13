@@ -5,14 +5,16 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Mail, Phone, RefreshCw, Loader2, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Search, Mail, Phone, RefreshCw, Loader2, CheckCircle2, AlertTriangle, ShieldAlert, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { ProvisionStudentsDialog } from "@/components/admin/ProvisionStudentsDialog";
 
 export default function AdminStudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [students, setStudents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProvisionOpen, setIsProvisionOpen] = useState(false);
 
   const fetchStudents = async () => {
     setIsLoading(true);
@@ -165,6 +167,16 @@ export default function AdminStudentsPage() {
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
             {isLoading ? "Đang tải..." : "Làm mới"}
           </Button>
+
+          <Button
+            variant="gold"
+            size="sm"
+            className="text-xs h-8 px-3 font-bold shadow-md shadow-gold-500/10 flex items-center gap-1.5"
+            onClick={() => setIsProvisionOpen(true)}
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            Cấp Tài Khoản Mới
+          </Button>
         </div>
       </div>
 
@@ -268,6 +280,13 @@ export default function AdminStudentsPage() {
           </table>
         </div>
       )}
+
+      {/* Modal cấp tài khoản & gửi email hàng loạt */}
+      <ProvisionStudentsDialog
+        open={isProvisionOpen}
+        onOpenChange={setIsProvisionOpen}
+        onSuccess={fetchStudents}
+      />
     </div>
   );
 }
