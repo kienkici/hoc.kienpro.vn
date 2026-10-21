@@ -131,7 +131,7 @@ export default function AdminCoursesPage() {
         title="Quản Lý Khóa Học"
         description="Tạo mới, chỉnh sửa nội dung bài giảng, học phí và xuất bản khóa học."
       >
-        <Button variant="gold" size="sm" asChild>
+        <Button size="sm" asChild className="bg-[#0071e3] hover:bg-[#0077ed] text-white font-semibold shadow-sm shadow-[#0071e3]/30">
           <Link href="/admin/courses/new">
             <Plus className="w-4 h-4 mr-1.5" /> Tạo Khóa Học Mới
           </Link>
@@ -155,7 +155,7 @@ export default function AdminCoursesPage() {
       {/* CONTENT */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-gold-400" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#0071e3]" />
           <span className="text-sm text-zinc-400">Đang tải danh sách khóa học...</span>
         </div>
       ) : filteredCourses.length === 0 ? (

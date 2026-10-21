@@ -44,16 +44,16 @@ const config: Config = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         gold: {
-          50: "#FAF6E8",
-          100: "#F4E8C1",
-          200: "#E9D28B",
-          300: "#DEBB55",
-          400: "#E5C158",
-          500: "#D4AF37", // Gold Primary
-          600: "#C5A028",
-          700: "#997A15",
-          800: "#6B530C",
-          900: "#3D2E04",
+          50: "#e8f4fd",
+          100: "#d1e9fb",
+          200: "#a3d3f7",
+          300: "#5eb6f4",
+          400: "#2997ff", // Apple Bright Blue
+          500: "#0071e3", // Apple Primary CTA Blue
+          600: "#0077ed",
+          700: "#0062c4",
+          800: "#0051a8",
+          900: "#003b7a",
         },
         surface: {
           DEFAULT: "#18181B",

@@ -27,5 +27,12 @@ yarn-error.log*
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
-*.sw?
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts
+
+# Uploads fallback (assets are stored on Supabase Storage)
+public/uploads/images/*
+public/uploads/resources/*
+!public/uploads/**/.gitkeep
+

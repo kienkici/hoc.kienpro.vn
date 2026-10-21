@@ -37,7 +37,7 @@ export function AdminSidebar() {
         {/* Brand Header */}
         <div className="p-6 border-b border-zinc-800/80 flex items-center justify-between">
           <Logo showText={true} />
-          <Badge variant="gold" className="text-[10px] uppercase">Admin</Badge>
+          <Badge variant="default" className="text-[10px] uppercase font-semibold">Admin</Badge>
         </div>
 
         {/* Navigation */}
@@ -56,14 +56,14 @@ export function AdminSidebar() {
                 className={cn(
                   "flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all group",
                   isActive
-                    ? "bg-amber-500/10 text-amber-400 font-semibold border border-amber-500/20"
+                    ? "bg-[#0071e3]/15 text-[#2997ff] font-semibold border border-[#0071e3]/30"
                     : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900"
                 )}
               >
                 <Icon
                   className={cn(
                     "w-4 h-4 transition-colors",
-                    isActive ? "text-amber-400" : "text-zinc-400 group-hover:text-zinc-200"
+                    isActive ? "text-[#2997ff]" : "text-zinc-400 group-hover:text-zinc-200"
                   )}
                 />
                 <span>{item.title}</span>
@@ -76,7 +76,7 @@ export function AdminSidebar() {
       {/* Admin Footer info */}
       <div className="p-4 border-t border-zinc-800/80 space-y-3">
         <div className="flex items-center gap-3 p-2 rounded-lg bg-zinc-900/60 border border-zinc-800">
-          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+          <ShieldAlert className="w-5 h-5 text-[#2997ff] shrink-0" />
           <div className="flex flex-col min-w-0">
             <span className="text-xs font-semibold text-white truncate">
               Super Admin Mode

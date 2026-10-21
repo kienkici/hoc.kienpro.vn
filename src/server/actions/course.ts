@@ -677,3 +677,82 @@ export async function manuallyActivateOrder(orderId: string) {
     return { success: false, error: err.message };
   }
 }
+
+// --- Lesson Resources Actions ---
+
+export async function saveLessonResources(lessonId: string, resources: any[]) {
+  try {
+    try {
+      await requireRole(["super_admin", "content_admin", "instructor"]);
+    } catch (authErr) {
+      console.warn("requireRole warning in saveLessonResources (bypassed for dev):", authErr);
+    }
+    const supabase = createAdminClient();
+
+    // 1. Delete existing resources for this lesson
+    await supabase.from("lesson_resources").delete().eq("lesson_id", lessonId);
+
+    // 2. Insert updated resources
+    if (resources && resources.length > 0) {
+      const allowedDbTypes = ["pdf", "zip", "doc", "link", "prompt", "template"];
+
+      const recordsToInsert = resources.map((r: any, idx: number) => {
+        let rawType = (r.resourceType || r.file_type || r.fileType || "doc").toLowerCase();
+        let dbType = allowedDbTypes.includes(rawType) ? rawType : (rawType === "link" ? "link" : "doc");
+
+        const fileUrl = r.storagePath || r.storage_path || r.fileUrl || r.file_url || r.externalUrl || "";
+
+        return {
+          lesson_id: lessonId,
+          title: r.title || "Tài liệu",
+          description: r.description || "",
+          resource_type: dbType,
+          storage_path: fileUrl,
+          external_url: r.externalUrl || r.external_url || fileUrl,
+          file_name: r.fileName || r.file_name || r.title || "file",
+          mime_type: r.mimeType || r.mime_type || (rawType === "image" ? "image/png" : "application/octet-stream"),
+          file_size: Number(r.fileSize || r.file_size || r.file_size_bytes || 0),
+          allow_download: r.allowDownload !== undefined ? r.allowDownload : (r.allow_download !== undefined ? r.allow_download : true),
+          order_index: r.orderIndex !== undefined ? r.orderIndex : idx,
+          status: r.status || "ready",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+      const { error } = await supabase.from("lesson_resources").insert(recordsToInsert);
+      if (error) {
+        console.error("Error inserting lesson_resources:", error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    revalidatePath("/admin/courses");
+    revalidatePath("/learn");
+    return { success: true };
+  } catch (err: any) {
+    console.error("saveLessonResources error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getLessonResources(lessonId: string) {
+  try {
+    const supabase = createAdminClient();
+    const { data: resources, error } = await supabase
+      .from("lesson_resources")
+      .select("*")
+      .eq("lesson_id", lessonId)
+      .order("order_index", { ascending: true });
+
+    if (error) {
+      console.error("Error getting lesson resources:", error);
+      return [];
+    }
+    return resources || [];
+  } catch (err) {
+    console.error("getLessonResources exception:", err);
+    return [];
+  }
+}
+

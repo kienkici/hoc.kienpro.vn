@@ -92,14 +92,14 @@ export function CourseListToolbar({
         <div className="flex border border-zinc-800 rounded-lg p-0.5 bg-zinc-950">
           <button
             onClick={() => onViewModeChange("table")}
-            className={`p-1.5 rounded ${viewMode === "table" ? "bg-zinc-800 text-gold-400" : "text-zinc-400 hover:text-white"}`}
+            className={`p-1.5 rounded ${viewMode === "table" ? "bg-zinc-800 text-[#2997ff]" : "text-zinc-400 hover:text-white"}`}
             title="Dạng Bảng"
           >
             <LayoutList className="w-4 h-4" />
           </button>
           <button
             onClick={() => onViewModeChange("card")}
-            className={`p-1.5 rounded ${viewMode === "card" ? "bg-zinc-800 text-gold-400" : "text-zinc-400 hover:text-white"}`}
+            className={`p-1.5 rounded ${viewMode === "card" ? "bg-zinc-800 text-[#2997ff]" : "text-zinc-400 hover:text-white"}`}
             title="Dạng Thẻ (Card)"
           >
             <LayoutGrid className="w-4 h-4" />
@@ -107,7 +107,7 @@ export function CourseListToolbar({
         </div>
 
         {/* Create Button */}
-        <Button variant="gold" size="sm" asChild className="font-bold">
+        <Button size="sm" asChild className="font-semibold bg-[#0071e3] hover:bg-[#0077ed] text-white shadow-sm shadow-[#0071e3]/30">
           <Link href="/admin/courses/new">
             <Plus className="w-4 h-4 mr-1" /> Tạo Mới
           </Link>

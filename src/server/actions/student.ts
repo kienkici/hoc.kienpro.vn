@@ -596,3 +596,128 @@ export async function deleteStudentAction(studentId: string) {
   }
 }
 
+/**
+ * Lưu sổ tay ghi chú của học viên cho từng bài học (riêng biệt theo mỗi tài khoản / email)
+ */
+export async function saveStudentNoteAction({
+  lessonId,
+  content,
+  userId,
+}: {
+  lessonId: string;
+  content: string;
+  userId?: string;
+}) {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const targetUserId = user?.id || userId;
+    if (!targetUserId) {
+      return { success: false, error: "Vui lòng đăng nhập để lưu ghi chú vào tài khoản của bạn." };
+    }
+
+    // Giới hạn tối đa 10.000 ký tự để chống spam và bảo vệ tài nguyên hệ thống
+    const MAX_NOTE_LENGTH = 10000;
+    if (content && content.length > MAX_NOTE_LENGTH) {
+      return {
+        success: false,
+        error: `Ghi chú vượt quá giới hạn tối đa cho phép (${MAX_NOTE_LENGTH.toLocaleString("vi-VN")} ký tự). Vui lòng rút gọn lại.`,
+      };
+    }
+
+    const adminSupabase = createAdminClient();
+
+    // Kiểm tra xem đã có bản ghi chú nào của học viên này cho bài học này chưa
+    const { data: existing } = await adminSupabase
+      .from("student_notes")
+      .select("id")
+      .eq("user_id", targetUserId)
+      .eq("lesson_id", lessonId)
+      .maybeSingle();
+
+    let res;
+    if (existing) {
+      res = await adminSupabase
+        .from("student_notes")
+        .update({
+          content,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+        .select()
+        .single();
+    } else {
+      res = await adminSupabase
+        .from("student_notes")
+        .insert({
+          user_id: targetUserId,
+          lesson_id: lessonId,
+          content,
+          video_timestamp_seconds: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+    }
+
+    if (res.error) {
+      console.error("Lỗi khi lưu student_notes:", res.error);
+      return { success: false, error: res.error.message };
+    }
+
+    const timeStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+    return {
+      success: true,
+      note: res.data,
+      updatedAt: timeStr,
+      message: `Đã lưu ghi chú lúc ${timeStr}`,
+    };
+  } catch (err: any) {
+    console.error("saveStudentNoteAction exception:", err);
+    return { success: false, error: err.message || "Lỗi không xác định khi lưu ghi chú." };
+  }
+}
+
+/**
+ * Lấy nội dung ghi chú của học viên cho bài học này
+ */
+export async function getStudentNoteAction(lessonId: string, userId?: string) {
+  try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const targetUserId = user?.id || userId;
+    if (!targetUserId) {
+      return { success: true, content: "", updatedAt: null };
+    }
+
+    const adminSupabase = createAdminClient();
+    const { data: note, error } = await adminSupabase
+      .from("student_notes")
+      .select("id, content, updated_at")
+      .eq("user_id", targetUserId)
+      .eq("lesson_id", lessonId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Lỗi khi lấy student_notes:", error);
+      return { success: true, content: "", updatedAt: null };
+    }
+
+    const timeStr = note?.updated_at
+      ? new Date(note.updated_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+      : null;
+
+    return {
+      success: true,
+      content: note?.content || "",
+      updatedAt: timeStr,
+    };
+  } catch (err: any) {
+    console.error("getStudentNoteAction exception:", err);
+    return { success: true, content: "", updatedAt: null };
+  }
+}
+

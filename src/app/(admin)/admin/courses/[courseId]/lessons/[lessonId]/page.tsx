@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, FileText, Film, Download, AlignLeft, CheckSquare, HelpCircle, PenTool, Lock, Settings, Loader2 } from "lucide-react";
-import { getLessonWithDetails, updateLesson } from "@/server/actions/course";
+import { getLessonWithDetails, updateLesson, saveLessonResources } from "@/server/actions/course";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Lesson } from "@/types/admin";
 import { toast } from "sonner";
@@ -40,6 +40,37 @@ export default function LessonEditorPage({
     }
 
     // Map DB structure to frontend type safely
+    const mappedResources = (data.lesson_resources || []).map((r: any) => {
+      const isImg = (r.mime_type && r.mime_type.startsWith("image/")) ||
+        /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(r.file_name || r.external_url || r.storage_path || "");
+      const isDocx = /\.(docx?)$/i.test(r.file_name || "");
+      const isXlsx = /\.(xlsx?)$/i.test(r.file_name || "");
+      const isPptx = /\.(pptx?)$/i.test(r.file_name || "");
+
+      let displayType = r.resource_type;
+      if (isImg) displayType = "image";
+      else if (isDocx) displayType = "docx";
+      else if (isXlsx) displayType = "xlsx";
+      else if (isPptx) displayType = "pptx";
+
+      return {
+        id: r.id,
+        lessonId: r.lesson_id,
+        title: r.title,
+        description: r.description || "",
+        resourceType: displayType,
+        storagePath: r.storage_path || "",
+        externalUrl: r.external_url || r.storage_path || "",
+        fileName: r.file_name || r.title,
+        mimeType: r.mime_type || "",
+        fileSize: Number(r.file_size) || 0,
+        allowDownload: r.allow_download ?? true,
+        orderIndex: r.order_index ?? 0,
+        status: r.status || "ready",
+        createdAt: r.created_at || "",
+      };
+    });
+
     const mapped: Lesson = {
       id: data.id,
       moduleId: data.module_id,
@@ -67,7 +98,7 @@ export default function LessonEditorPage({
         resolution: "1080p",
         createdAt: ""
       } : null,
-      resources: data.lesson_resources || [],
+      resources: mappedResources,
       transcriptSegments: data.transcript_segments || [],
       checklist: data.checklist_items || [],
       quiz: data.quizzes || null,
@@ -87,6 +118,21 @@ export default function LessonEditorPage({
 
   const handleUpdateLesson = async (updatedFields: Partial<Lesson>) => {
     if (!lesson) return;
+
+    // Optimistically update local state immediately so tab counter reflects instantly
+    setLesson((prev) => (prev ? { ...prev, ...updatedFields } : null));
+
+    if (updatedFields.resources) {
+      const res = await saveLessonResources(lesson.id, updatedFields.resources);
+      if (res.success) {
+        toast.success("Đã lưu danh sách tài liệu!");
+        fetchLessonData();
+      } else {
+        toast.error(res.error || "Không thể lưu tài liệu.");
+      }
+      return;
+    }
+
     const res = await updateLesson(lesson.id, updatedFields);
     if (res.success) {
       toast.success("Cập nhật bài học thành công!");

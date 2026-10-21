@@ -13,8 +13,8 @@
     --popover: 240 10% 9.5%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 47 65% 52%; /* Gold #D4AF37 */
-    --primary-foreground: 240 10% 3.9%;
+    --primary: 211 100% 45%; /* Apple Blue #0071e3 */
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -22,15 +22,15 @@
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
 
-    --accent: 47 65% 52%;
-    --accent-foreground: 240 10% 3.9%;
+    --accent: 211 100% 45%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 47 65% 52%;
+    --ring: 211 100% 50%;
 
     --radius: 0.5rem;
   }
@@ -41,7 +41,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-gold-500/30 selection:text-gold-300;
+    @apply bg-background text-foreground antialiased selection:bg-[#0071e3]/30 selection:text-white;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
@@ -62,16 +62,38 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #D4AF37;
+  background: #0071e3;
 }
 
-/* Gold Gradient Utility */
+/* Apple Button & Gradient Utilities */
 .bg-gold-gradient {
-  background: linear-gradient(135deg, #E5C158 0%, #D4AF37 50%, #B89020 100%);
+  background: linear-gradient(135deg, #0077ED 0%, #0071E3 100%);
 }
 
 .text-gold-gradient {
-  background: linear-gradient(135deg, #F4E8C1 0%, #D4AF37 50%, #E9D28B 100%);
+  background: linear-gradient(180deg, #FFFFFF 20%, #A1A1A6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Apple Style Titanium & Glass Utilities */
+.apple-glass {
+  background: rgba(18, 18, 20, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.apple-glass-card {
+  background: radial-gradient(100% 100% at 50% 0%, rgba(30, 30, 35, 0.5) 0%, rgba(10, 10, 12, 0.8) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.apple-headline {
+  background: linear-gradient(180deg, #FFFFFF 20%, #A1A1A6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+

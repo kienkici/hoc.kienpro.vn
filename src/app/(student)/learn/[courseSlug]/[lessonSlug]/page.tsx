@@ -22,7 +22,7 @@ import {
   X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getBunnyVideoUrl } from "@/server/actions/course";
+import { getBunnyVideoUrl, getLessonResources } from "@/server/actions/course";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -31,6 +31,8 @@ import { LessonChecklist } from "@/components/lesson/LessonChecklist";
 import { LessonNotes } from "@/components/lesson/LessonNotes";
 import { LessonResources } from "@/components/lesson/LessonResources";
 import { AIMentorPlaceholder } from "@/components/lesson/AIMentorPlaceholder";
+import { ImageLightboxModal } from "@/components/shared/ImageLightboxModal";
+import { ZoomIn, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props {
@@ -55,10 +57,20 @@ export default function LessonLearnPage({ params }: Props) {
   const [embedUrl, setEmbedUrl] = useState<string>("");
   const [videoError, setVideoError] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
   
   // Progress & checklist states
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  // Lightbox state for images in lesson
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState({ url: "", title: "" });
+
+  const openLightbox = (url: string, title: string) => {
+    setLightboxImage({ url, title });
+    setLightboxOpen(true);
+  };
 
   useEffect(() => {
     const fetchLearnData = async () => {
@@ -81,6 +93,7 @@ export default function LessonLearnPage({ params }: Props) {
 
       if (user) {
         setUserId(user.id);
+        setUserEmail(user.email || "");
       }
 
       if (!courseData) {
@@ -137,21 +150,27 @@ export default function LessonLearnPage({ params }: Props) {
         setIsLessonChanging(false);
         return;
       }
-      setCurrentLesson(foundLesson);
 
       if (user && progressRes?.data) {
         const completedIds = progressRes.data.map((p: any) => p.lesson_id) || [];
         setIsCompleted(completedIds.includes(foundLesson.id));
       }
 
-      // Tải song song Tài liệu đính kèm và Checklist của bài học ở giai đoạn 3 (Parallel Stage 3)
-      const [resourcesRes, checklistRes] = await Promise.all([
-        supabase.from("lesson_resources").select("*").eq("lesson_id", foundLesson.id),
-        supabase.from("checklist_items").select("*").eq("lesson_id", foundLesson.id)
+      // Tải song song Chi tiết bài học, Tài liệu đính kèm (server action) và Checklist
+      const [resourcesData, checklistRes, lessonDetailRes] = await Promise.all([
+        getLessonResources(foundLesson.id),
+        supabase.from("checklist_items").select("*").eq("lesson_id", foundLesson.id),
+        supabase.from("lessons").select("*").eq("id", foundLesson.id).single()
       ]);
 
-      foundLesson.resources = resourcesRes.data || [];
-      foundLesson.checklist = checklistRes.data || [];
+      const fullLessonData = {
+        ...foundLesson,
+        ...(lessonDetailRes.data || {}),
+        resources: resourcesData || [],
+        checklist: checklistRes.data || [],
+      };
+
+      setCurrentLesson(fullLessonData);
 
       // 6. Xử lý hiển thị Video (không gọi Server Action nếu Token Auth tắt trên Bunny.net để tải trong 0ms)
       if (foundLesson.video_id) {
@@ -515,14 +534,108 @@ export default function LessonLearnPage({ params }: Props) {
             </TabsList>
 
             <TabsContent value="content" className="space-y-4">
-              <div className="prose prose-invert prose-xs max-w-none text-zinc-300 bg-zinc-900/20 p-5 rounded-xl border border-zinc-800/60">
-                <h3 className="text-sm font-bold text-white mb-2">Tóm tắt bài học:</h3>
-                <p className="text-xs leading-relaxed">{currentLesson.description || "Chưa có mô tả chi tiết."}</p>
-                
-                <h3 className="text-sm font-bold text-white mt-4 mb-2">Chi tiết lý thuyết:</h3>
-                <div className="text-xs leading-relaxed whitespace-pre-wrap">
-                  {currentLesson.content || "Nội dung lý thuyết chưa được cung cấp."}
+              <div className="text-zinc-300 bg-zinc-950 p-6 rounded-2xl border border-zinc-800/80 shadow-xl space-y-6">
+                {/* Lesson Header Banner */}
+                <div className="border-b border-zinc-800/80 pb-4">
+                  <span className="text-[10px] font-mono uppercase text-[#2997ff] tracking-widest font-bold">
+                    Nội Dung & Tài Liệu Bài Giảng
+                  </span>
+                  <h2 className="text-lg md:text-xl font-bold text-white mt-1">
+                    {currentLesson.title}
+                  </h2>
+                  {currentLesson.description && (
+                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                      {currentLesson.description}
+                    </p>
+                  )}
                 </div>
+
+                {/* Content Stream (Text + Interactive Visual Images) */}
+                {currentLesson.content ? (
+                  <div className="space-y-6 pt-1">
+                    {currentLesson.content.split("\n\n").map((block: string, idx: number) => {
+                      const imgMatch = block.trim().match(/^!\[(.*?)\]\((.*?)\)$/);
+                      if (imgMatch) {
+                        const alt = imgMatch[1] || "Hình ảnh minh họa bài học";
+                        const url = imgMatch[2];
+
+                        return (
+                          <div
+                            key={idx}
+                            className="group rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden shadow-lg hover:border-zinc-700 transition-all my-5"
+                          >
+                            {/* Image Header with quick Zoom Button */}
+                            <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/90 border-b border-zinc-800 text-xs">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <ImageIcon className="w-3.5 h-3.5 text-[#2997ff] shrink-0" />
+                                <span className="font-semibold text-zinc-200 truncate">{alt}</span>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openLightbox(url, alt)}
+                                className="h-7 text-xs text-[#2997ff] hover:bg-[#0071e3]/20 hover:text-white gap-1"
+                              >
+                                <ZoomIn className="w-3.5 h-3.5" /> Phóng to chi tiết
+                              </Button>
+                            </div>
+
+                            {/* Clickable Image Body */}
+                            <div
+                              onClick={() => openLightbox(url, alt)}
+                              className="p-3 sm:p-4 flex flex-col items-center justify-center cursor-zoom-in relative bg-black/40 group/img"
+                            >
+                              <img
+                                src={url}
+                                alt={alt}
+                                className="max-h-[550px] w-auto max-w-full rounded-xl object-contain shadow-md transition-transform duration-200 group-hover/img:scale-[1.01]"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/25 flex items-center justify-center transition-colors pointer-events-none">
+                                <span className="opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/85 backdrop-blur text-white text-xs px-3.5 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20 shadow-xl">
+                                  <ZoomIn className="w-3.5 h-3.5 text-[#2997ff]" /> Nhấp để phóng to / kéo xem chi tiết
+                                </span>
+                              </div>
+                            </div>
+
+                            {alt && (
+                              <div className="px-4 py-2 border-t border-zinc-800/60 bg-zinc-950/60 text-center">
+                                <p className="text-xs text-zinc-400 italic">
+                                  {alt}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (block.startsWith("### ")) {
+                        return (
+                          <h4 key={idx} className="text-sm font-bold text-white pt-2 border-l-2 border-[#0071e3] pl-3">
+                            {block.replace("### ", "")}
+                          </h4>
+                        );
+                      }
+                      if (block.startsWith("## ")) {
+                        return (
+                          <h3 key={idx} className="text-base font-bold text-white pt-3 border-l-2 border-white pl-3">
+                            {block.replace("## ", "")}
+                          </h3>
+                        );
+                      }
+
+                      return (
+                        <p key={idx} className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                          {block}
+                        </p>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-xs text-zinc-500 italic py-6 text-center">
+                    Nội dung lý thuyết chưa được cung cấp cho bài học này.
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -542,7 +655,9 @@ export default function LessonLearnPage({ params }: Props) {
             <TabsContent value="notes">
               <LessonNotes 
                 userId={userId}
+                userEmail={userEmail}
                 lessonId={currentLesson.id}
+                lessonTitle={currentLesson.title}
               />
             </TabsContent>
 
@@ -553,6 +668,13 @@ export default function LessonLearnPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Lightbox Modal for zooming and panning images */}
+      <ImageLightboxModal
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        imageUrl={lightboxImage.url}
+        title={lightboxImage.title}
+      />
     </div>
   );
 }

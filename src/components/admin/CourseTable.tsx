@@ -55,7 +55,7 @@ export function CourseTable({
                     <div className="min-w-0">
                       <Link
                         href={`/admin/courses/${course.id}`}
-                        className="font-semibold text-white hover:text-gold-400 transition-colors line-clamp-1 text-sm"
+                        className="font-semibold text-white hover:text-[#2997ff] transition-colors line-clamp-1 text-sm"
                       >
                         {course.title}
                       </Link>
@@ -68,7 +68,7 @@ export function CourseTable({
 
                 {/* Price */}
                 <td className="p-4 font-medium">
-                  <div className="text-gold-400 font-bold">{formatCurrency(course.salePrice)}</div>
+                  <div className="text-white font-bold">{formatCurrency(course.salePrice)}</div>
                   {course.price > course.salePrice && (
                     <div className="text-[10px] text-zinc-500 line-through">
                       {formatCurrency(course.price)}
@@ -84,7 +84,7 @@ export function CourseTable({
                 {/* Modules / Lessons Count */}
                 <td className="p-4 text-zinc-400">
                   <div className="flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-gold-400" />
+                    <Layers className="w-3.5 h-3.5 text-zinc-400" />
                     <span>{course.modules.length} chương ({totalLessons} bài)</span>
                   </div>
                 </td>
@@ -108,7 +108,7 @@ export function CourseTable({
                     {/* Curriculum Builder Button */}
                     <Button variant="ghost" size="icon" asChild title="Chương trình học">
                       <Link href={`/admin/courses/${course.id}/curriculum`}>
-                        <Layers className="w-4 h-4 text-amber-400" />
+                        <Layers className="w-4 h-4 text-[#2997ff]" />
                       </Link>
                     </Button>
 
@@ -126,13 +126,13 @@ export function CourseTable({
                       onClick={() => onDuplicate(course)}
                       title="Nhân bản"
                     >
-                      <Copy className="w-4 h-4 text-zinc-400 hover:text-gold-400" />
+                      <Copy className="w-4 h-4 text-zinc-400 hover:text-[#2997ff]" />
                     </Button>
 
                     {/* Preview Button */}
                     <Button variant="ghost" size="icon" asChild title="Xem trước Public">
                       <Link href={`/courses/${course.slug}`} target="_blank">
-                        <Eye className="w-4 h-4 text-zinc-400 hover:text-gold-400" />
+                        <Eye className="w-4 h-4 text-zinc-400 hover:text-[#2997ff]" />
                       </Link>
                     </Button>
 
