@@ -97,7 +97,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     }
   > = {
     "khoa-hoc-facebook-co-ban-den-chuyen-sau": {
-      mainTitle: "Bộ Quà Tặng Trị Giá 3.500.000đ Đi Kèm",
+      mainTitle: "Bộ Quà Tặng Trị Giá 16.000.000đ Đi Kèm",
       subtitle: "Khi đăng ký hôm nay, bạn được mở khóa toàn bộ gói công cụ và hỗ trợ độc quyền:",
       totalValueText: "16.000.000đ",
       categories: [
