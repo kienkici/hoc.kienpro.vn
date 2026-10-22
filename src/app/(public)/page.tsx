@@ -50,16 +50,16 @@ export default async function HomePage() {
     : MOCK_COURSES;
 
   return (
-    <div className="bg-black text-white overflow-hidden space-y-32 pb-32">
+    <div className="bg-black text-white overflow-hidden space-y-14 md:space-y-20 pb-16 md:pb-20">
       {/* =========================================================================
           1. HERO SECTION (APPLE IPHONE PRO CINEMATIC STYLE)
       ========================================================================= */}
-      <section className="relative pt-24 md:pt-36 pb-16 overflow-hidden">
+      <section className="relative pt-6 md:pt-10 pb-2 md:pb-4 overflow-hidden">
         {/* Subtle radial ambient glows */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-gradient-to-b from-zinc-800/20 via-zinc-900/10 to-transparent blur-3xl pointer-events-none rounded-full" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-[#0071e3]/10 blur-[120px] pointer-events-none rounded-full" />
 
-        <div className="container max-w-6xl mx-auto px-4 sm:px-6 text-center space-y-10 relative z-10">
+        <div className="container max-w-6xl mx-auto px-4 sm:px-6 text-center space-y-6 md:space-y-8 relative z-10">
           {/* Eyebrow Pill Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-md shadow-inner text-xs font-medium tracking-wider text-zinc-300">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -69,22 +69,22 @@ export default async function HomePage() {
           </div>
 
           {/* Statement Headlines (Apple SF Pro Display style) */}
-          <div className="space-y-3 max-w-4xl mx-auto">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.05]">
+          <div className="space-y-2.5 max-w-4xl mx-auto">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.05]">
               Thiết kế đẳng cấp.
             </h1>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-zinc-400 leading-[1.05]">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-zinc-400 leading-[1.05]">
               Tự động hóa <span className="apple-headline">tuyệt đối.</span>
             </h2>
           </div>
 
           {/* Clean Subtitle */}
-          <p className="text-base sm:text-lg md:text-xl text-[#86868b] max-w-2xl mx-auto font-normal leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg text-[#86868b] max-w-2xl mx-auto font-normal leading-relaxed">
             Học thực chiến, làm chủ công nghệ AI và hệ thống kinh doanh tự động. Cấp quyền học tức thì trong 10 giây qua VietQR, bảo vệ bản quyền với video HLS mã hóa đa tầng.
           </p>
 
           {/* Apple Pill CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-1">
             <Button
               size="lg"
               asChild
@@ -105,7 +105,7 @@ export default async function HomePage() {
           </div>
 
           {/* Floating Titanium Device Showcase */}
-          <div className="pt-12 max-w-5xl mx-auto">
+          <div className="pt-6 md:pt-8 max-w-5xl mx-auto">
             <div className="relative rounded-3xl p-2 sm:p-3 bg-gradient-to-b from-white/15 via-white/5 to-transparent border border-white/10 shadow-[0_30px_100px_rgba(0,0,0,0.9)]">
               <div className="relative rounded-2xl overflow-hidden aspect-[16/9] bg-zinc-950 border border-white/5">
                 <Image
@@ -142,7 +142,7 @@ export default async function HomePage() {
           2. APPLE SPEC TICKER (TỔNG QUAN THÔNG SỐ VƯỢT TRỘI)
       ========================================================================= */}
       <section className="container max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="py-12 border-y border-white/[0.08] grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        <div className="py-8 md:py-10 border-y border-white/[0.08] grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
           <div className="space-y-1">
             <div className="text-4xl md:text-5xl font-bold tracking-tight text-white">
               10s
@@ -181,8 +181,8 @@ export default async function HomePage() {
       {/* =========================================================================
           3. BENTO GRID TÍNH NĂNG ĐỘT PHÁ (APPLE BENTO SHOWCASE)
       ========================================================================= */}
-      <section className="container max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
+      <section className="container max-w-6xl mx-auto px-4 sm:px-6 space-y-8 md:space-y-10">
+        <div className="text-center space-y-3 max-w-3xl mx-auto">
           <span className="text-xs uppercase tracking-widest text-zinc-500 font-semibold">
             Đột Phá Kỹ Thuật
           </span>
@@ -300,9 +300,9 @@ export default async function HomePage() {
       {/* =========================================================================
           4. COURSE CATALOG (APPLE SHOWROOM PRODUCTS)
       ========================================================================= */}
-      <section id="courses" className="container max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/[0.08] pb-8">
-          <div className="space-y-3">
+      <section id="courses" className="container max-w-6xl mx-auto px-4 sm:px-6 space-y-8 md:space-y-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/[0.08] pb-6">
+          <div className="space-y-2">
             <span className="text-xs uppercase tracking-widest text-zinc-500 font-semibold">
               Chương Trình Đào Tạo
             </span>
@@ -330,13 +330,13 @@ export default async function HomePage() {
       {/* =========================================================================
           5. PHILOSOPHY QUOTE SECTION (APPLE KEYNOTE MOMENT)
       ========================================================================= */}
-      <section className="container max-w-5xl mx-auto px-4 sm:px-6 text-center py-16">
-        <div className="rounded-3xl p-10 md:p-16 border border-white/10 bg-gradient-to-b from-zinc-900/40 via-zinc-950 to-black relative">
-          <div className="space-y-6 max-w-3xl mx-auto">
-            <p className="text-2xl sm:text-3xl md:text-4xl font-light text-zinc-200 leading-snug tracking-tight">
+      <section className="container max-w-5xl mx-auto px-4 sm:px-6 text-center py-2 md:py-4">
+        <div className="rounded-3xl p-8 sm:p-10 md:p-14 border border-white/10 bg-gradient-to-b from-zinc-900/40 via-zinc-950 to-black relative">
+          <div className="space-y-5 max-w-3xl mx-auto">
+            <p className="text-xl sm:text-2xl md:text-3xl font-light text-zinc-200 leading-snug tracking-tight">
               &ldquo;Học công nghệ và tự động hóa không nên là điều phức tạp. Mọi thứ phải trực quan, chuẩn mực và đem lại kết quả thực tế ngay tức thì.&rdquo;
             </p>
-            <div className="pt-4 flex flex-col items-center justify-center space-y-1">
+            <div className="pt-2 flex flex-col items-center justify-center space-y-1">
               <span className="font-semibold text-white tracking-wide">Kiên Pro</span>
               <span className="text-xs text-[#86868b]">Founder & Lead Instructor • Thương hiệu Kiên Pro</span>
             </div>
@@ -347,15 +347,15 @@ export default async function HomePage() {
       {/* =========================================================================
           6. CLOSING CTA BANNER (READY TO UPGRADE)
       ========================================================================= */}
-      <section className="container max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-8">
-        <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white">
+      <section className="container max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
           Sẵn sàng bắt đầu?
         </h2>
-        <p className="text-base sm:text-lg text-[#86868b] max-w-xl mx-auto leading-relaxed">
+        <p className="text-sm sm:text-base text-[#86868b] max-w-xl mx-auto leading-relaxed">
           Gia nhập cộng đồng hơn 1.200 học viên tại KIENPRO LMS. Sở hữu ngay các kỹ năng AI & Tự động hóa bán hàng dẫn đầu thị trường.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
           <Button
             size="lg"
             asChild
