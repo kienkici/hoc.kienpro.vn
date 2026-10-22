@@ -285,7 +285,7 @@ export default function LessonLearnPage({ params }: Props) {
       {/* LEFT COLUMN: Course Navigation Sidebar (Desktop fixed / Mobile sliding drawer) */}
       <div className={`
         fixed inset-y-0 left-0 w-80 bg-zinc-900 border-r border-zinc-800 z-50 transform transition-transform duration-300 flex flex-col justify-between
-        lg:static lg:w-80 lg:translate-x-0 lg:z-auto lg:bg-zinc-900/30
+        lg:static lg:w-84 xl:w-96 lg:translate-x-0 lg:z-auto lg:bg-zinc-900/30
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         <div className="p-4 border-b border-zinc-800 space-y-3 relative">
@@ -334,7 +334,7 @@ export default function LessonLearnPage({ params }: Props) {
                       key={les.id}
                       href={`/learn/${courseSlug}/${les.slug}`}
                       onClick={() => setIsSidebarOpen(false)}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-medium transition-all ${
+                      className={`flex items-start justify-between p-2.5 rounded-lg border text-xs font-medium transition-all gap-2 ${
                         isActive
                           ? "bg-gold-500/10 border-gold-500/50 text-gold-400 font-semibold"
                           : isCompletedLesson
@@ -342,18 +342,20 @@ export default function LessonLearnPage({ params }: Props) {
                           : "bg-transparent border-transparent text-zinc-400 hover:bg-zinc-900/40 hover:text-zinc-200"
                       } ${isLockedLesson ? "opacity-75" : ""}`}
                     >
-                      <div className="flex items-center gap-2 min-w-0 pr-1">
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
                         {isCompletedLesson ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         ) : isLockedLesson ? (
-                          <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                          <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0 mt-0.5" />
                         ) : (
-                          <Play className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-gold-400 fill-gold-400/20" : "text-zinc-500"}`} />
+                          <Play className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isActive ? "text-gold-400 fill-gold-400/20" : "text-zinc-500"}`} />
                         )}
-                        <span className="truncate">{les.title}</span>
+                        <span className="leading-snug break-words">{les.title}</span>
                       </div>
                       {les.is_preview && (
-                        <span className="text-[10px] text-gold-400 shrink-0 font-normal">Học thử</span>
+                        <span className="text-[10px] text-gold-400 shrink-0 font-normal px-1.5 py-0.5 rounded bg-gold-400/10 border border-gold-400/20 whitespace-nowrap mt-0.5">
+                          Học thử
+                        </span>
                       )}
                     </Link>
                   );

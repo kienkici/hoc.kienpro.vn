@@ -22,7 +22,7 @@ export function LessonItem({
   const content = (
     <div
       className={cn(
-        "flex items-center justify-between p-3 rounded-lg border transition-all text-sm group",
+        "flex items-start justify-between p-3 rounded-lg border transition-all text-sm group gap-3",
         isCurrent
           ? "bg-gold-500/10 border-gold-500/50 text-gold-400 font-medium"
           : isCompleted
@@ -31,24 +31,24 @@ export function LessonItem({
         isLocked && "opacity-75 hover:border-zinc-700/80 cursor-pointer"
       )}
     >
-      <div className="flex items-center gap-3 min-w-0 pr-2">
+      <div className="flex items-start gap-3 min-w-0 pr-2 flex-1">
         {isCompleted ? (
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
         ) : isLocked ? (
-          <Lock className="w-4 h-4 text-zinc-500 shrink-0" />
+          <Lock className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
         ) : (
-          <PlayCircle className={cn("w-4 h-4 shrink-0", isCurrent ? "text-gold-400" : "text-zinc-400 group-hover:text-gold-400")} />
+          <PlayCircle className={cn("w-4 h-4 shrink-0 mt-0.5", isCurrent ? "text-gold-400" : "text-zinc-400 group-hover:text-gold-400")} />
         )}
-        <span className="truncate font-medium">{lesson.title}</span>
+        <span className="font-medium leading-relaxed break-words">{lesson.title}</span>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-2 shrink-0 mt-0.5">
         {lesson.isFreePreview ? (
-          <Badge variant="gold" className="text-[10px] py-0 px-1.5">Học thử</Badge>
+          <Badge variant="gold" className="text-[10px] py-0 px-1.5 whitespace-nowrap">Học thử</Badge>
         ) : isLocked ? (
-          <span className="text-[11px] text-zinc-500 hidden sm:inline-block">Đăng ký để học</span>
+          <span className="text-[11px] text-zinc-500 hidden sm:inline-block whitespace-nowrap">Đăng ký để học</span>
         ) : null}
-        <span className="text-xs text-zinc-400">
+        <span className="text-xs text-zinc-400 whitespace-nowrap">
           {lesson.durationSeconds > 0 ? formatDuration(lesson.durationSeconds) : "Video HD"}
         </span>
       </div>
