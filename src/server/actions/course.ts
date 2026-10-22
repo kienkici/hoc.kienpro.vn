@@ -50,7 +50,9 @@ export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
       throw new Error("Bạn không có quyền truy cập video bài học này");
     }
 
-    const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID || "771780";
+    const libraryId = (process.env.BUNNY_STREAM_LIBRARY_ID && process.env.BUNNY_STREAM_LIBRARY_ID !== "718961")
+      ? process.env.BUNNY_STREAM_LIBRARY_ID
+      : "771780";
     const tokenKey = process.env.BUNNY_TOKEN_AUTHENTICATION_KEY;
     
     let embedUrl = "";
@@ -60,7 +62,7 @@ export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
       embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
     } else {
       // Nếu đã cấu hình Token Key bảo mật riêng, thực hiện ký URL để chống chia sẻ lậu
-      const expires = Math.floor(Date.now() / 1000) + 3600;
+      const expires = Math.floor(Date.now() / 1000) + 86400;
       const input = tokenKey + videoId + expires;
       const token = crypto.createHash("sha256").update(input).digest("hex");
       embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}?token=${token}&expires=${expires}`;
@@ -182,7 +184,9 @@ export async function getLessonLearnData(courseSlug: string, lessonSlug: string)
     // 6. Tính URL Embed Video nếu có quyền
     let embedUrl = "";
     if (hasAccess && currentLesson.video_id) {
-      const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID || "771780";
+      const libraryId = (process.env.BUNNY_STREAM_LIBRARY_ID && process.env.BUNNY_STREAM_LIBRARY_ID !== "718961")
+        ? process.env.BUNNY_STREAM_LIBRARY_ID
+        : "771780";
       const tokenKey = process.env.BUNNY_TOKEN_AUTHENTICATION_KEY;
       if (!tokenKey || tokenKey === "59de0e0f-78e0-4cae-91a9-e68a6de6a5f9") {
         embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${currentLesson.video_id}`;
@@ -190,6 +194,8 @@ export async function getLessonLearnData(courseSlug: string, lessonSlug: string)
         const signResult = await getBunnyVideoUrl(currentLesson.video_id, currentLesson.id);
         if (signResult.success && signResult.embedUrl) {
           embedUrl = signResult.embedUrl;
+        } else {
+          embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${currentLesson.video_id}`;
         }
       }
     }
