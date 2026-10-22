@@ -28,7 +28,7 @@ export function LessonItem({
           : isCompleted
           ? "bg-zinc-900/60 border-zinc-800/60 text-zinc-300 hover:border-zinc-700"
           : "bg-zinc-900/40 border-zinc-800/40 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200",
-        isLocked && "opacity-60 cursor-not-allowed hover:border-zinc-800/40"
+        isLocked && "opacity-75 hover:border-zinc-700/80 cursor-pointer"
       )}
     >
       <div className="flex items-center gap-3 min-w-0 pr-2">
@@ -43,14 +43,24 @@ export function LessonItem({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {lesson.isFreePreview && <Badge variant="gold" className="text-[10px] py-0 px-1.5">Học thử</Badge>}
-        <span className="text-xs text-zinc-500">{formatDuration(lesson.durationSeconds)}</span>
+        {lesson.isFreePreview ? (
+          <Badge variant="gold" className="text-[10px] py-0 px-1.5">Học thử</Badge>
+        ) : isLocked ? (
+          <span className="text-[11px] text-zinc-500 hidden sm:inline-block">Đăng ký để học</span>
+        ) : null}
+        <span className="text-xs text-zinc-400">
+          {lesson.durationSeconds > 0 ? formatDuration(lesson.durationSeconds) : "Video HD"}
+        </span>
       </div>
     </div>
   );
 
   if (isLocked) {
-    return content;
+    return (
+      <Link href={`/checkout/${courseSlug}`} title="Đăng ký khóa học để mở khóa bài học này">
+        {content}
+      </Link>
+    );
   }
 
   return (

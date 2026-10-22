@@ -50,6 +50,7 @@ export function ModuleAccordion({
                 courseSlug={courseSlug}
                 isCurrent={lesson.slug === currentLessonSlug}
                 isCompleted={completedLessonIds.includes(lesson.id)}
+                isLocked={!lesson.isFreePreview}
               />
             ))}
           </AccordionContent>
