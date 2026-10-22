@@ -1,7 +1,7 @@
 import NextLink from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Star, Users, CheckCircle2, ShieldCheck, PlayCircle, ArrowRight, BookOpen, Clock, Lock } from "lucide-react";
+import { Star, Users, CheckCircle2, ShieldCheck, PlayCircle, ArrowRight, BookOpen, Clock, Lock, Gift, FileSpreadsheet, Layers, Headphones, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,12 +81,73 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     ],
   };
 
+  // Danh mục bộ quà tặng đi kèm khóa học
+  const bonusPackagesBySlug: Record<
+    string,
+    {
+      mainTitle: string;
+      subtitle: string;
+      totalValueText: string;
+      categories: {
+        title: string;
+        valueText: string;
+        icon: any;
+        items: { id: string; title: string; value: string }[];
+      }[];
+    }
+  > = {
+    "khoa-hoc-facebook-co-ban-den-chuyen-sau": {
+      mainTitle: "Bộ Quà Tặng Trị Giá 3.500.000đ Đi Kèm",
+      subtitle: "Khi đăng ký hôm nay, bạn được mở khóa toàn bộ gói công cụ và hỗ trợ độc quyền:",
+      totalValueText: "16.000.000đ",
+      categories: [
+        {
+          title: '7 bộ "tài liệu thực chiến"',
+          valueText: "Trị giá 4.500.000đ",
+          icon: FileSpreadsheet,
+          items: [
+            { id: "#1", title: "File Excel quản lý chi phí & hiệu quả quảng cáo", value: "500k" },
+            { id: "#2", title: "Bộ target mẫu theo ngành (Mỹ phẩm, Thời trang, F&B, Mẹ&Bé, SPA, Tuyển dụng...)", value: "1tr" },
+            { id: "#3", title: "Bộ quy trình set camp từ A-Z + Campaign checklist chuẩn xác", value: "1.000k" },
+            { id: "#4", title: "Quy trình bán hàng trên Facebook cá nhân", value: "500k" },
+            { id: "#5", title: "Quy trình bán hàng Zalo Marketing", value: "500k" },
+            { id: "#6", title: "Lộ trình xây thương hiệu cá nhân trên Facebook", value: "500k" },
+            { id: "#7", title: "Quy trình chăm sóc khách hàng cũ", value: "500k" },
+          ],
+        },
+        {
+          title: '2 bộ "công cụ và tài nguyên"',
+          valueText: "Trị giá 1.500.000đ",
+          icon: Layers,
+          items: [
+            { id: "#1", title: "File quản trị tài sản Facebook (BM, Via, Page, Pixel)", value: "500k" },
+            { id: "#2", title: "Content Ads templates (Mẫu content win) + Template báo cáo chuyên nghiệp", value: "1.000k" },
+          ],
+        },
+        {
+          title: '5 gói "hỗ trợ sau khoá học"',
+          valueText: "Trị giá 10.000.000đ",
+          icon: Headphones,
+          items: [
+            { id: "#1", title: "Hỗ trợ 1-1 qua Zalo trong 90 ngày", value: "3tr" },
+            { id: "#2", title: 'Cập nhật "thuật toán mới FB ADS" trọn đời', value: "3tr" },
+            { id: "#3", title: "Review camp quảng cáo thực tế", value: "1tr" },
+            { id: "#4", title: "Video ôn tập trọn đời", value: "3tr" },
+            { id: "#5", title: "Vào cộng đồng ADS Kiên Pro + cơ hội giới thiệu job/dự án", value: "1tr" },
+          ],
+        },
+      ],
+    },
+  };
+
   const highlights = defaultHighlightsBySlug[courseData.slug] || [
     "Nội dung cô đọng, thực chiến và dễ hiểu từ con số 0",
     "Hỗ trợ trực tiếp từ giảng viên Kiên Pro trong suốt quá trình học",
     "Sở hữu tài liệu và video bài giảng vĩnh viễn",
     "Cập nhật kiến thức mới liên tục hoàn toàn miễn phí",
   ];
+
+  const bonusPackage = bonusPackagesBySlug[courseData.slug];
 
   const course = {
     id: courseData.id,
@@ -102,6 +163,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     reviewCount: 342,
     instructorName: "Kiên Pro",
     highlights,
+    bonusPackage,
     modules: (courseData.course_modules || [])
       .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
       .map((m: any) => ({
@@ -140,7 +202,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
       {/* HERO / OVERVIEW SECTION */}
       <section className="container max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
         {/* Left Column: Details */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center gap-2">
             {discountPercent > 0 && <Badge variant="gold">GIẢM {discountPercent}% HÔM NAY</Badge>}
             <span className="text-xs text-zinc-400">Thương hiệu: {course.instructorName}</span>
@@ -184,6 +246,90 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               ))}
             </div>
           </div>
+
+          {/* Bonus Gifts Package (Bộ quà tặng đi kèm) */}
+          {course.bonusPackage && (
+            <div className="rounded-2xl border border-gold-500/30 bg-gradient-to-b from-gold-500/[0.08] via-zinc-950/90 to-zinc-950 p-5 sm:p-6 space-y-5 relative overflow-hidden shadow-2xl shadow-gold-500/5">
+              {/* Ambient Gold Glow */}
+              <div className="absolute top-0 right-0 w-72 h-72 bg-gold-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+
+              {/* Header */}
+              <div className="space-y-2 relative">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold-400/15 border border-gold-400/30 text-gold-400 text-xs font-bold uppercase tracking-wider">
+                  <Gift className="w-3.5 h-3.5" />
+                  Đặc quyền quà tặng độc quyền
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                  <span className="w-1.5 h-6 bg-gradient-to-b from-gold-300 to-gold-500 rounded-full inline-block" />
+                  {course.bonusPackage.mainTitle}
+                </h3>
+
+                <p className="text-sm text-zinc-300 leading-relaxed italic">
+                  &ldquo;{course.bonusPackage.subtitle}&rdquo;
+                </p>
+              </div>
+
+              {/* Bonus Categories */}
+              <div className="space-y-4 relative">
+                {course.bonusPackage.categories.map((cat, cIdx) => {
+                  const Icon = cat.icon;
+                  return (
+                    <div
+                      key={cIdx}
+                      className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-3 transition-colors hover:border-gold-500/30"
+                    >
+                      {/* Category Header */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
+                        <div className="flex items-center gap-2 text-zinc-100 font-bold text-sm sm:text-base">
+                          <span className="p-1.5 rounded-lg bg-gold-400/10 text-gold-400 border border-gold-400/20">
+                            <Icon className="w-4 h-4" />
+                          </span>
+                          <span>{cat.title}</span>
+                        </div>
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          {cat.valueText}
+                        </span>
+                      </div>
+
+                      {/* Items */}
+                      <div className="space-y-2">
+                        {cat.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-zinc-950/60 border border-zinc-800/60 hover:border-zinc-700 transition-colors"
+                          >
+                            <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                              <span className="shrink-0 text-[11px] font-mono font-bold text-gold-400 bg-gold-400/10 border border-gold-400/20 px-1.5 py-0.5 rounded">
+                                {item.id}
+                              </span>
+                              <span className="text-xs sm:text-sm text-zinc-200 leading-snug">
+                                {item.title}
+                              </span>
+                            </div>
+                            <span className="shrink-0 text-xs font-semibold text-gold-400/90 bg-gold-500/10 border border-gold-500/20 px-2 py-0.5 rounded-md">
+                              {item.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer Trust Callout */}
+              <div className="pt-2 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-400">
+                <span className="flex items-center gap-1.5 text-zinc-300">
+                  <Sparkles className="w-4 h-4 text-gold-400" />
+                  Tổng giá trị quà tặng thực tế lên tới: <strong className="text-gold-400 font-bold">{course.bonusPackage.totalValueText}</strong>
+                </span>
+                <span className="text-emerald-400 font-medium">
+                  ✓ Kích hoạt & nhận ngay sau khi hoàn tất đăng ký
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Checkout Card Sticky */}
