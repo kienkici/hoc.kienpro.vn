@@ -22,7 +22,7 @@ import {
   X
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getBunnyVideoUrl, getLessonResources } from "@/server/actions/course";
+import { getBunnyVideoUrl, getLessonResources, getLessonLearnData } from "@/server/actions/course";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -56,6 +56,7 @@ export default function LessonLearnPage({ params }: Props) {
   const [currentLesson, setCurrentLesson] = useState<any>(null);
   const [embedUrl, setEmbedUrl] = useState<string>("");
   const [videoError, setVideoError] = useState<string>("");
+  const [isEnrolled, setIsEnrolled] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
   
@@ -80,126 +81,47 @@ export default function LessonLearnPage({ params }: Props) {
         setIsLessonChanging(true);
       }
 
-      const supabase = createClient();
-      
-      // Tải song song Auth User và thông tin Khóa học ở giai đoạn 1 (Parallel Stage 1)
-      const [userRes, courseRes] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.from("courses").select("*").eq("slug", courseSlug).single()
-      ]);
+      // Gọi Server Action an toàn để lấy dữ liệu bài giảng & phân quyền (cho phép học thử preview)
+      const result = await getLessonLearnData(courseSlug, lessonSlug);
 
-      const user = userRes.data?.user;
-      const courseData = courseRes.data;
-
-      if (user) {
-        setUserId(user.id);
-        setUserEmail(user.email || "");
-      }
-
-      if (!courseData) {
-        setIsLoading(false);
-        setIsLessonChanging(false);
-        return;
-      }
-      setCourse(courseData);
-
-      // Tải song song Cấu trúc chương học và Tiến độ học tập ở giai đoạn 2 (Parallel Stage 2)
-      const [modulesRes, progressRes] = await Promise.all([
-        supabase
-          .from("course_modules")
-          .select(`
-            *,
-            lessons (
-              *
-            )
-          `)
-          .eq("course_id", courseData.id)
-          .order("order_index", { ascending: true })
-          .order("order_index", { foreignTable: "lessons", ascending: true }),
-        user ? supabase
-          .from("lesson_progress")
-          .select("lesson_id")
-          .eq("user_id", user.id)
-          .eq("completed", true) : Promise.resolve({ data: null })
-      ]);
-
-      // Sắp xếp bài giảng trong mỗi chương học theo order_index tăng dần
-      const modulesData = (modulesRes.data || []).map((mod: any) => ({
-        ...mod,
-        lessons: (mod.lessons || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
-      }));
-      setModules(modulesData);
-
-      if (user && progressRes?.data) {
-        const completedIds = progressRes.data.map((p: any) => p.lesson_id) || [];
-        setCompletedLessons(completedIds);
-      }
-
-      // 3. Tìm bài học hiện tại từ danh sách cấu trúc đã tải
-      let foundLesson: any = null;
-      for (const mod of modulesData) {
-        const matched = mod.lessons?.find((l: any) => l.slug === lessonSlug);
-        if (matched) {
-          foundLesson = matched;
-          break;
-        }
-      }
-
-      if (!foundLesson) {
+      if (!result.success || !result.course || !result.currentLesson) {
         setIsLoading(false);
         setIsLessonChanging(false);
         return;
       }
 
-      if (user && progressRes?.data) {
-        const completedIds = progressRes.data.map((p: any) => p.lesson_id) || [];
-        setIsCompleted(completedIds.includes(foundLesson.id));
-      }
+      setCourse(result.course);
+      setModules(result.modules || []);
+      setCurrentLesson(result.currentLesson);
+      setIsEnrolled(!!result.isEnrolled);
+      setUserId(result.userId || "");
+      setUserEmail(result.userEmail || "");
 
-      // Tải song song Chi tiết bài học, Tài liệu đính kèm (server action) và Checklist
-      const [resourcesData, checklistRes, lessonDetailRes] = await Promise.all([
-        getLessonResources(foundLesson.id),
-        supabase.from("checklist_items").select("*").eq("lesson_id", foundLesson.id),
-        supabase.from("lessons").select("*").eq("id", foundLesson.id).single()
-      ]);
-
-      const fullLessonData = {
-        ...foundLesson,
-        ...(lessonDetailRes.data || {}),
-        resources: resourcesData || [],
-        checklist: checklistRes.data || [],
-      };
-
-      setCurrentLesson(fullLessonData);
-
-      // 6. Xử lý hiển thị Video (không gọi Server Action nếu Token Auth tắt trên Bunny.net để tải trong 0ms)
-      if (foundLesson.video_id) {
-        if (!foundLesson.is_preview && !user) {
-          setVideoError("Bài học này bị khóa. Vui lòng đăng nhập hoặc mua khóa học để bắt đầu học tập.");
-          setEmbedUrl("");
-        } else {
-          // Bật/tắt Token Key tương tự cấu hình Bunny của anh
-          const tokenKey = process.env.NEXT_PUBLIC_BUNNY_TOKEN_AUTHENTICATION_KEY;
-          if (!tokenKey || tokenKey === "59de0e0f-78e0-4cae-91a9-e68a6de6a5f9") {
-            // Không bật Token Auth -> Tạo trực tiếp URL nhúng siêu nhanh ở Client (0ms)
-            const libraryId = process.env.NEXT_PUBLIC_BUNNY_STREAM_LIBRARY_ID || "771780";
-            setEmbedUrl(`https://iframe.mediadelivery.net/embed/${libraryId}/${foundLesson.video_id}`);
-            setVideoError("");
-          } else {
-            // Bật Token Auth -> Gọi Server Action để ký URL bảo mật
-            const signResult = await getBunnyVideoUrl(foundLesson.video_id, foundLesson.id);
-            if (signResult.success && signResult.embedUrl) {
-              setEmbedUrl(signResult.embedUrl);
-              setVideoError("");
-            } else {
-              setVideoError(signResult.error || "Không thể tải cấu hình phát video.");
-              setEmbedUrl("");
-            }
-          }
-        }
+      if (result.hasAccess && result.embedUrl) {
+        setEmbedUrl(result.embedUrl);
+        setVideoError("");
+      } else if (!result.hasAccess) {
+        setVideoError("Bài học này thuộc nội dung nâng cao. Vui lòng đăng ký khóa học để bắt đầu học tập.");
+        setEmbedUrl("");
       } else {
         setEmbedUrl("");
         setVideoError("");
+      }
+
+      // Nếu học viên đã đăng nhập, tải tiến độ học tập từ database
+      if (result.userId) {
+        const supabase = createClient();
+        const { data: progressRes } = await supabase
+          .from("lesson_progress")
+          .select("lesson_id")
+          .eq("user_id", result.userId)
+          .eq("completed", true);
+
+        if (progressRes) {
+          const completedIds = progressRes.map((p: any) => p.lesson_id) || [];
+          setCompletedLessons(completedIds);
+          setIsCompleted(completedIds.includes(result.currentLesson.id));
+        }
       }
 
       setIsLoading(false);
@@ -368,8 +290,11 @@ export default function LessonLearnPage({ params }: Props) {
       `}>
         <div className="p-4 border-b border-zinc-800 space-y-3 relative">
           <div className="flex justify-between items-center">
-            <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors">
-              <ArrowLeft className="w-3.5 h-3.5" /> Bảng điều khiển
+            <Link 
+              href={userId ? "/dashboard" : `/courses/${courseSlug}`} 
+              className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> {userId ? "Bảng điều khiển" : "Chi tiết khóa học"}
             </Link>
             <button 
               onClick={() => setIsSidebarOpen(false)} 
@@ -402,6 +327,7 @@ export default function LessonLearnPage({ params }: Props) {
                 {mod.lessons?.map((les: any) => {
                   const isActive = les.slug === lessonSlug;
                   const isCompletedLesson = completedLessons.includes(les.id);
+                  const isLockedLesson = !les.is_preview && !isEnrolled;
 
                   return (
                     <Link
@@ -410,20 +336,25 @@ export default function LessonLearnPage({ params }: Props) {
                       onClick={() => setIsSidebarOpen(false)}
                       className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-medium transition-all ${
                         isActive
-                          ? "bg-gold-500/10 border-gold-500/50 text-gold-400"
+                          ? "bg-gold-500/10 border-gold-500/50 text-gold-400 font-semibold"
                           : isCompletedLesson
                           ? "bg-zinc-900/40 border-zinc-800/40 text-zinc-300 hover:border-zinc-700"
                           : "bg-transparent border-transparent text-zinc-400 hover:bg-zinc-900/40 hover:text-zinc-200"
-                      }`}
+                      } ${isLockedLesson ? "opacity-75" : ""}`}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 pr-1">
                         {isCompletedLesson ? (
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        ) : isLockedLesson ? (
+                          <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                         ) : (
                           <Play className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-gold-400 fill-gold-400/20" : "text-zinc-500"}`} />
                         )}
                         <span className="truncate">{les.title}</span>
                       </div>
+                      {les.is_preview && (
+                        <span className="text-[10px] text-gold-400 shrink-0 font-normal">Học thử</span>
+                      )}
                     </Link>
                   );
                 })}
@@ -491,7 +422,15 @@ export default function LessonLearnPage({ params }: Props) {
 
           {/* Lesson Header & Mark Complete */}
           <div className="w-full max-w-5xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-6 border-b border-zinc-800 pb-6">
-            <div className="space-y-1">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                {currentLesson.is_preview && (
+                  <Badge variant="gold" className="text-[10px] py-0.5 px-2">BÀI HỌC THỬ MIỄN PHÍ</Badge>
+                )}
+                {!isEnrolled && !currentLesson.is_preview && (
+                  <Badge variant="secondary" className="text-[10px] py-0.5 px-2 text-zinc-400">NỘI DUNG NÂNG CAO</Badge>
+                )}
+              </div>
               <h1 className="text-lg md:text-xl font-extrabold text-white">
                 {currentLesson.title}
               </h1>
@@ -500,21 +439,32 @@ export default function LessonLearnPage({ params }: Props) {
               </p>
             </div>
 
-            <Button 
-              onClick={handleMarkComplete} 
-              variant={isCompleted ? "secondary" : "gold"} 
-              size="sm"
-              className="font-bold text-xs"
-            >
-              {isCompleted ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 mr-1.5 text-emerald-400" />
-                  Đã hoàn thành bài học
-                </>
-              ) : (
-                "Đánh dấu hoàn thành"
+            <div className="flex items-center gap-3">
+              {!isEnrolled && (
+                <Button variant="gold" size="sm" asChild className="font-bold text-xs">
+                  <Link href={`/checkout/${courseSlug}`}>
+                    Đăng Ký Khóa Học Trọn Gói
+                  </Link>
+                </Button>
               )}
-            </Button>
+              {isEnrolled && (
+                <Button 
+                  onClick={handleMarkComplete} 
+                  variant={isCompleted ? "secondary" : "gold"} 
+                  size="sm"
+                  className="font-bold text-xs"
+                >
+                  {isCompleted ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-1.5 text-emerald-400" />
+                      Đã hoàn thành bài học
+                    </>
+                  ) : (
+                    "Đánh dấu hoàn thành"
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

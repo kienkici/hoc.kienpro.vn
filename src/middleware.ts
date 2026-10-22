@@ -55,10 +55,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Protected paths
+  // Protected paths (Trang học viên cá nhân & quản trị)
+  // Lưu ý: /learn được xử lý phân quyền cấp bài học (cho phép học thử preview)
   const isProtectedPath =
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/learn") ||
     pathname.startsWith("/student") ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/my-courses") ||

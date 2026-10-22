@@ -6,9 +6,10 @@ import crypto from "crypto";
 
 export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
   try {
+    const adminSupabase = createAdminClient();
     const supabase = createClient();
 
-    const { data: lesson } = await supabase
+    const { data: lesson } = await adminSupabase
       .from("lessons")
       .select("course_id, is_preview")
       .eq("id", lessonId)
@@ -23,22 +24,22 @@ export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Chưa đăng nhập");
 
-      const { data: enrollment } = await supabase
+      const { data: enrollment } = await adminSupabase
         .from("enrollments")
         .select("id")
         .eq("user_id", user.id)
         .eq("course_id", lesson.course_id)
         .eq("status", "ACTIVE")
-        .single();
+        .maybeSingle();
 
       if (enrollment) {
         hasAccess = true;
       } else {
-        const { data: roleData } = await supabase
+        const { data: roleData } = await adminSupabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         if (roleData && ["super_admin", "content_admin", "instructor", "support"].includes(roleData.role)) {
           hasAccess = true;
         }
@@ -66,6 +67,144 @@ export async function getBunnyVideoUrl(videoId: string, lessonId: string) {
     }
     
     return { success: true, embedUrl };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getLessonLearnData(courseSlug: string, lessonSlug: string) {
+  try {
+    const adminSupabase = createAdminClient();
+    const supabase = createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 1. Lấy thông tin khóa học
+    const { data: course, error: cErr } = await adminSupabase
+      .from("courses")
+      .select("*")
+      .eq("slug", courseSlug)
+      .is("deleted_at", null)
+      .single();
+
+    if (cErr || !course) return { success: false, error: "Không tìm thấy khóa học" };
+
+    // 2. Lấy cấu trúc module & bài học
+    const { data: modules, error: mErr } = await adminSupabase
+      .from("course_modules")
+      .select(`
+        id,
+        title,
+        order_index,
+        lessons (
+          id,
+          title,
+          slug,
+          is_preview,
+          duration_seconds,
+          order_index,
+          video_id
+        )
+      `)
+      .eq("course_id", course.id)
+      .order("order_index", { ascending: true });
+
+    if (mErr) return { success: false, error: "Lỗi tải bài giảng" };
+
+    // Sắp xếp bài giảng
+    const sortedModules = (modules || []).map((mod: any) => ({
+      ...mod,
+      lessons: (mod.lessons || []).sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+    }));
+
+    // 3. Tìm bài học hiện tại
+    let currentLesson: any = null;
+    for (const mod of sortedModules) {
+      const match = mod.lessons?.find((l: any) => l.slug === lessonSlug);
+      if (match) {
+        currentLesson = match;
+        break;
+      }
+    }
+
+    if (!currentLesson) return { success: false, error: "Không tìm thấy bài học" };
+
+    // 4. Kiểm tra quyền truy cập bài học
+    let hasAccess = false;
+    let isEnrolled = false;
+
+    if (currentLesson.is_preview) {
+      hasAccess = true;
+    }
+
+    if (user) {
+      const { data: enrollment } = await adminSupabase
+        .from("enrollments")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("course_id", course.id)
+        .eq("status", "ACTIVE")
+        .maybeSingle();
+
+      if (enrollment) {
+        hasAccess = true;
+        isEnrolled = true;
+      } else {
+        const { data: roleData } = await adminSupabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (roleData && ["super_admin", "content_admin", "instructor", "support"].includes(roleData.role)) {
+          hasAccess = true;
+          isEnrolled = true;
+        }
+      }
+    }
+
+    // 5. Nếu có quyền, lấy chi tiết nội dung bài học & tài liệu
+    let fullLesson = { ...currentLesson };
+    if (hasAccess) {
+      const [detailRes, resourcesRes, checklistRes] = await Promise.all([
+        adminSupabase.from("lessons").select("*").eq("id", currentLesson.id).single(),
+        adminSupabase.from("lesson_resources").select("*").eq("lesson_id", currentLesson.id).order("order_index", { ascending: true }),
+        adminSupabase.from("checklist_items").select("*").eq("lesson_id", currentLesson.id).order("order_index", { ascending: true })
+      ]);
+
+      fullLesson = {
+        ...fullLesson,
+        ...(detailRes.data || {}),
+        resources: resourcesRes.data || [],
+        checklist: checklistRes.data || []
+      };
+    }
+
+    // 6. Tính URL Embed Video nếu có quyền
+    let embedUrl = "";
+    if (hasAccess && currentLesson.video_id) {
+      const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID || "771780";
+      const tokenKey = process.env.BUNNY_TOKEN_AUTHENTICATION_KEY;
+      if (!tokenKey || tokenKey === "59de0e0f-78e0-4cae-91a9-e68a6de6a5f9") {
+        embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${currentLesson.video_id}`;
+      } else {
+        const signResult = await getBunnyVideoUrl(currentLesson.video_id, currentLesson.id);
+        if (signResult.success && signResult.embedUrl) {
+          embedUrl = signResult.embedUrl;
+        }
+      }
+    }
+
+    return {
+      success: true,
+      course,
+      modules: sortedModules,
+      currentLesson: fullLesson,
+      hasAccess,
+      isEnrolled,
+      embedUrl,
+      userId: user?.id || null,
+      userEmail: user?.email || null
+    };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
