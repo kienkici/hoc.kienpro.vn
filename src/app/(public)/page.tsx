@@ -300,7 +300,7 @@ export default async function HomePage() {
       {/* =========================================================================
           4. COURSE CATALOG (APPLE SHOWROOM PRODUCTS)
       ========================================================================= */}
-      <section id="courses" className="container max-w-6xl mx-auto px-4 sm:px-6 space-y-8 md:space-y-10">
+      <section id="courses" className="container max-w-6xl mx-auto px-4 sm:px-6 space-y-8 md:space-y-10 scroll-mt-24">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/[0.08] pb-6">
           <div className="space-y-2">
             <span className="text-xs uppercase tracking-widest text-zinc-500 font-semibold">

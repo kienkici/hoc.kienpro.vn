@@ -154,7 +154,7 @@ export function TopNavigation() {
                 <Link href="/login">Đăng nhập</Link>
               </Button>
               <Button size="sm" asChild className="rounded-full bg-[#0071e3] text-white hover:bg-[#0077ed] text-xs font-semibold px-4 py-2 shadow-[0_0_15px_rgba(0,113,227,0.35)] transition-all">
-                <Link href="/checkout/thiet-ke-website-ai">Đăng ký học</Link>
+                <Link href="/#courses">Đăng ký học</Link>
               </Button>
             </div>
           )}
@@ -205,7 +205,7 @@ export function TopNavigation() {
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Đăng nhập</Link>
               </Button>
               <Button asChild className="w-full rounded-full bg-[#0071e3] text-white hover:bg-[#0077ed]">
-                <Link href="/checkout/thiet-ke-website-ai" onClick={() => setMobileMenuOpen(false)}>Đăng ký khóa học</Link>
+                <Link href="/#courses" onClick={() => setMobileMenuOpen(false)}>Đăng ký học</Link>
               </Button>
             </div>
           )}
